@@ -11,8 +11,8 @@ const steps = [
   },
   {
     title: 'Escolha plano e quantidade',
-    desc: '3 planos disponíveis (7 dias, 30 dias, vitalícia) e compra desde 1 chave. Preço escala por volume.',
-    points: ['7 dias: R$ 12,90 – R$ 22,90/un', '30 dias: R$ 19,90 – R$ 39,90/un', 'Vitalícia: R$ 34,90 – R$ 54,90/un', 'Sem mínimo de compra'],
+    desc: '3 planos disponíveis (7 dias, 30 dias, vitalícia). Compra mínima de 2 chaves. Preço escala por volume.',
+    points: ['7 dias: R$ 14,90 – R$ 16,90/un', '30 dias: R$ 24,90 – R$ 29,90/un', 'Vitalícia: R$ 34,90 – R$ 39,90/un', 'Mínimo de 2 chaves · acima de 25 o preço cai'],
   },
   {
     title: 'Entrega automática',

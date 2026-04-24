@@ -12,6 +12,7 @@ const privateLinks = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/comprar-chaves', label: 'Comprar chaves' },
   { to: '/minhas-chaves', label: 'Minhas chaves' },
+  { to: '/enviar-teste', label: 'Enviar teste' },
   { to: '/materiais', label: 'Materiais' },
   { to: '/suporte', label: 'Suporte' },
 ];

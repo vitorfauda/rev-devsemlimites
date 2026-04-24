@@ -11,6 +11,7 @@ import Cadastrar from '@/pages/Cadastrar';
 import Dashboard from '@/pages/Dashboard';
 import ComprarChaves from '@/pages/ComprarChaves';
 import MinhasChaves from '@/pages/MinhasChaves';
+import EnviarTeste from '@/pages/EnviarTeste';
 import Materiais from '@/pages/Materiais';
 import Perfil from '@/pages/Perfil';
 import Suporte from '@/pages/Suporte';
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/comprar-chaves" element={<ProtectedRoute><ComprarChaves /></ProtectedRoute>} />
               <Route path="/minhas-chaves" element={<ProtectedRoute><MinhasChaves /></ProtectedRoute>} />
+              <Route path="/enviar-teste" element={<ProtectedRoute><EnviarTeste /></ProtectedRoute>} />
               <Route path="/materiais" element={<ProtectedRoute><Materiais /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />

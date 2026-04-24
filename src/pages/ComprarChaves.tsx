@@ -28,7 +28,7 @@ export default function ComprarChaves() {
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [purchases, setPurchases] = useState<ResellerPurchase[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>('vitalicio');
-  const [quantity, setQuantity] = useState<number>(10);
+  const [quantity, setQuantity] = useState<number>(2);
 
   const [openSheet, setOpenSheet] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -159,22 +159,22 @@ export default function ComprarChaves() {
         {/* Selector de quantidade */}
         <div className="holo-card holo-permanent p-6">
           <h3 className="font-display font-bold text-lg mb-1">Quantidade</h3>
-          <p className="text-sm text-text-muted mb-5">Mínimo 1 chave · sem limite máximo</p>
+          <p className="text-sm text-text-muted mb-5">Mínimo <span className="text-primary font-semibold">2 chaves</span> · sem limite máximo</p>
 
           <div className="flex items-center gap-3 mb-5">
             <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              onClick={() => setQuantity(Math.max(2, quantity - 1))}
               className="h-12 w-12 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all disabled:opacity-40"
-              disabled={quantity <= 1}
+              disabled={quantity <= 2}
             >
               <Minus size={16} />
             </button>
             <input
               type="number"
-              min={1}
+              min={2}
               max={500}
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))}
+              onChange={(e) => setQuantity(Math.max(2, Math.min(500, parseInt(e.target.value) || 2)))}
               className="input-dsl text-center text-2xl font-display font-bold font-tabular"
             />
             <button
@@ -187,7 +187,7 @@ export default function ComprarChaves() {
 
           {/* Botões de atalho */}
           <div className="flex flex-wrap gap-2 mb-5">
-            {[1, 5, 10, 25, 50, 100].map(n => (
+            {[2, 5, 10, 25, 50, 100].map(n => (
               <button
                 key={n}
                 onClick={() => setQuantity(n)}
@@ -251,7 +251,7 @@ export default function ComprarChaves() {
 
             <button
               onClick={() => setOpenSheet(true)}
-              disabled={quantity < 1}
+              disabled={quantity < 2}
               className="cta-neon w-full flex items-center justify-center gap-2"
             >
               <span className="relative z-10 flex items-center gap-2">

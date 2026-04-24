@@ -13,8 +13,8 @@ const plans = [
     icon: Zap,
     color: '#22d3ee',
     retail: 4700,
-    priceFrom: 1290,
-    priceTo: 2290,
+    priceFrom: 1490,
+    priceTo: 1690,
     popular: false,
   },
   {
@@ -23,8 +23,8 @@ const plans = [
     icon: TrendingUp,
     color: '#fbbf24',
     retail: 9700,
-    priceFrom: 1990,
-    priceTo: 3990,
+    priceFrom: 2490,
+    priceTo: 2990,
     popular: false,
   },
   {
@@ -34,7 +34,7 @@ const plans = [
     color: '#22c55e',
     retail: 14700,
     priceFrom: 3490,
-    priceTo: 5490,
+    priceTo: 3990,
     popular: true,
   },
 ];
@@ -235,7 +235,7 @@ export default function Landing() {
           </div>
 
           <p className="text-center text-sm text-text-muted mt-10">
-            Preços escalonados · compre desde <span className="text-primary font-semibold">1 chave</span> até quantas quiser
+            Preços escalonados · compra mínima de <span className="text-primary font-semibold">2 chaves</span>
           </p>
         </div>
       </section>
