@@ -21,12 +21,25 @@ function checkIsAdmin(user: User | null): boolean {
   return ADMIN_EMAILS.includes(user.email || '') || user.user_metadata?.role === 'admin';
 }
 
-// Auto-cria row de reseller pra admin que ainda não tem
+// Auto-cria / atualiza row de reseller pra admin
 async function ensureAdminReseller(user: User): Promise<Reseller | null> {
   const { data: existing } = await supabase.from('resellers').select('*').eq('user_id', user.id).maybeSingle();
-  if (existing) return existing as Reseller;
 
-  // Cria row de admin com entry_paid=true e tier ouro
+  if (existing) {
+    // Se admin mas entry_paid=false ou status diferente de active, força
+    const e = existing as Reseller;
+    if (!e.entry_paid || e.status !== 'active' || e.tier !== 'ouro') {
+      const { data: updated } = await supabase.from('resellers').update({
+        entry_paid: true,
+        status: 'active',
+        tier: 'ouro',
+      }).eq('id', e.id).select('*').maybeSingle();
+      return (updated || existing) as Reseller;
+    }
+    return e;
+  }
+
+  // Cria row nova
   const uniqueCpf = `ADMIN${user.id.slice(0, 8).toUpperCase()}`;
   const uniqueWa = `00000${user.id.slice(0, 6).replace(/[^\d]/g, '0').padEnd(6, '0')}`;
 
