@@ -67,7 +67,16 @@ export default function Cadastrar() {
       const userId = signup.user?.id;
       if (!userId) throw new Error('Falha ao criar conta');
 
-      // 2) insere em resellers
+      // 2) Garante sessão ativa (caso o signup nao retorne session por algum motivo)
+      if (!signup.session) {
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+        if (signInErr) throw new Error('Conta criada, mas falha ao logar: ' + signInErr.message);
+      }
+
+      // 3) insere em resellers (agora auth.uid() esta populado)
       const { error: insertErr } = await supabase.from('resellers').insert({
         user_id: userId,
         name: data.name,
