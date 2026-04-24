@@ -17,7 +17,7 @@ const privateLinks = [
 ];
 
 export function Header() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, isAdmin } = useAuth();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -40,6 +40,11 @@ export function Header() {
           </div>
           <span className="text-text-primary">Dev Sem Limites</span>
           <span className="hidden sm:inline text-xs text-text-muted font-normal">| Revenda</span>
+          {isAdmin && (
+            <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-full border font-bold ml-1" style={{ background: 'rgba(217,70,239,0.12)', borderColor: 'rgba(217,70,239,0.4)', color: '#d946ef' }}>
+              MODO ADMIN
+            </span>
+          )}
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
