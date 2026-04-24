@@ -71,7 +71,7 @@ export default function Dashboard() {
             {reseller?.tier?.toUpperCase()}
           </div>
         </div>
-        <h1 className="text-4xl font-display font-bold mb-8">{reseller?.name?.split(' ')[0]} 👋</h1>
+        <h1 className="text-3xl sm:text-4xl font-display font-bold mb-8">{reseller?.name?.split(' ')[0]} 👋</h1>
       </motion.div>
 
       {/* Métricas */}

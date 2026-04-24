@@ -75,7 +75,7 @@ export default function MinhasChaves() {
     <div className="container mx-auto px-4 sm:px-6 py-10">
       <div className="flex flex-wrap justify-between items-start gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-display font-bold mb-2">Minhas chaves</h1>
+          <h1 className="text-3xl sm:text-4xl font-display font-bold mb-2">Minhas chaves</h1>
           <p className="text-text-muted">Gerencie suas licenças e marque as vendidas</p>
         </div>
         <button onClick={exportCSV} className="cta-ghost text-sm">Exportar CSV</button>
@@ -113,7 +113,7 @@ export default function MinhasChaves() {
             {licenses.length === 0 ? 'Você ainda não tem chaves. Compre um pacote!' : 'Nenhuma chave encontrada.'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-text-muted text-left" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>

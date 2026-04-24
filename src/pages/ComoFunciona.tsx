@@ -32,7 +32,7 @@ export default function ComoFunciona() {
       <div className="max-w-3xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
           <div className="text-sm font-semibold text-primary mb-3">COMO FUNCIONA</div>
-          <h1 className="text-5xl sm:text-6xl font-display font-bold mb-4">O programa completo</h1>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-display font-bold mb-4">O programa completo</h1>
           <p className="text-lg text-text-muted">Tudo que você precisa saber antes de entrar</p>
         </motion.div>
 

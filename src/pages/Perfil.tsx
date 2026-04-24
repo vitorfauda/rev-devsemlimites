@@ -67,7 +67,7 @@ export default function Perfil() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-10 max-w-4xl">
-      <h1 className="text-4xl font-display font-bold mb-8">Perfil</h1>
+      <h1 className="text-3xl sm:text-4xl font-display font-bold mb-8">Perfil</h1>
 
       <div className="grid md:grid-cols-[220px_1fr] gap-6">
         <aside className="flex md:flex-col gap-1 overflow-x-auto">

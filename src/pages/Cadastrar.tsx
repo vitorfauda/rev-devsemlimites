@@ -150,7 +150,7 @@ export default function Cadastrar() {
 
         {step === 1 && (
           <div className="holo-card holo-permanent p-8 sm:p-10">
-            <h1 className="text-3xl font-display font-bold mb-2">Cadastro de revendedor</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">Cadastro de revendedor</h1>
             <p className="text-text-muted mb-8 text-sm">Preencha seus dados para começar</p>
 
             <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-4">
@@ -194,7 +194,7 @@ export default function Cadastrar() {
 
         {step === 2 && (
           <div className="holo-card holo-permanent p-8 sm:p-10">
-            <h1 className="text-3xl font-display font-bold mb-2">Pagamento de acesso</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">Pagamento de acesso</h1>
             <p className="text-text-muted mb-6 text-sm">Taxa única de ativação da conta</p>
 
             <div className="rounded-xl p-5 mb-6 bg-gradient-to-br from-primary/10 to-accent-cyan/5 border border-primary/20">

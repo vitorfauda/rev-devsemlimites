@@ -116,7 +116,7 @@ export default function ComprarChaves() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-10">
-      <h1 className="text-4xl font-display font-bold mb-2">Comprar chaves</h1>
+      <h1 className="text-3xl sm:text-4xl font-display font-bold mb-2">Comprar chaves</h1>
       <p className="text-text-muted mb-10">
         Escolha o plano, a quantidade e pague via PIX. As chaves são geradas automaticamente após confirmação.
       </p>
@@ -221,7 +221,7 @@ export default function ComprarChaves() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-xs text-text-muted uppercase tracking-wider">Seu custo</div>
-                <div className="text-5xl font-display font-bold font-tabular mt-1">{formatBRL(total)}</div>
+                <div className="text-4xl sm:text-5xl font-display font-bold font-tabular mt-1">{formatBRL(total)}</div>
                 <div className="text-xs text-text-muted mt-1 font-mono font-tabular">
                   {quantity}× {formatBRL(unitPrice)} · {planMeta[selectedPlan].label}
                 </div>
@@ -265,7 +265,7 @@ export default function ComprarChaves() {
       {/* ================= TABELA DE TIERS ================= */}
       <div className="holo-card p-6 mb-10">
         <h3 className="font-display font-bold text-lg mb-4">Tabela de preços · {planMeta[selectedPlan].label}</h3>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-text-muted text-left text-xs uppercase tracking-wider" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -306,12 +306,12 @@ export default function ComprarChaves() {
       </div>
 
       {/* ================= HISTÓRICO ================= */}
-      <h2 className="text-2xl font-display font-bold mb-4">Histórico de compras</h2>
+      <h2 className="text-xl sm:text-2xl font-display font-bold mb-4">Histórico de compras</h2>
       <div className="holo-card overflow-hidden">
         {purchases.length === 0 ? (
           <p className="p-6 text-sm text-text-muted text-center">Nenhuma compra ainda.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-text-muted text-left text-xs uppercase tracking-wider" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>

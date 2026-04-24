@@ -47,7 +47,7 @@ export default function Login() {
       <div className="mesh-blob" style={{ width: 400, height: 400, bottom: '10%', right: '10%', background: '#22d3ee' }} />
 
       <div className="holo-card holo-permanent p-8 sm:p-10 w-full max-w-md relative z-10">
-        <h1 className="text-3xl font-display font-bold mb-2">Bem-vindo de volta</h1>
+        <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">Bem-vindo de volta</h1>
         <p className="text-text-muted mb-8 text-sm">Entre no seu painel de revenda</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

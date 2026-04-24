@@ -14,7 +14,7 @@ export default function Suporte() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-10 max-w-3xl">
-      <h1 className="text-4xl font-display font-bold mb-2">Central de suporte</h1>
+      <h1 className="text-3xl sm:text-4xl font-display font-bold mb-2">Central de suporte</h1>
       <p className="text-text-muted mb-10">Estamos aqui pra te ajudar a vender mais</p>
 
       {/* WhatsApp */}

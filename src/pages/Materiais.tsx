@@ -35,7 +35,7 @@ export default function Materiais() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-10">
-      <h1 className="text-4xl font-display font-bold mb-2">Kit de divulgação</h1>
+      <h1 className="text-3xl sm:text-4xl font-display font-bold mb-2">Kit de divulgação</h1>
       <p className="text-text-muted mb-10">Textos, imagens e vídeos prontos pra você usar nas suas redes.</p>
 
       {/* Imagens/Vídeos (placeholder) */}
