@@ -27,6 +27,7 @@ export type Reseller = {
   pix_key?: string;
   entry_paid: boolean;
   entry_payment_id?: string;
+  min_purchase_quantity?: number;
   created_at: string;
   updated_at: string;
 };
