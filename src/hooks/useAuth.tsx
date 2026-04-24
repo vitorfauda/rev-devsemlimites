@@ -106,7 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // scope 'local' desloga so desse device (padrao do supabase e 'global' que derruba em todos)
+    await supabase.auth.signOut({ scope: 'local' });
     setReseller(null);
   };
 
