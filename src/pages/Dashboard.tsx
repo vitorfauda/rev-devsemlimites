@@ -9,58 +9,104 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'rec
 import { LoaderRing } from '@/components/LoaderRing';
 
 export default function Dashboard() {
-  const { reseller } = useAuth();
+  const { reseller, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({ bought: 0, available: 0, sold: 0, potential: 0 });
   const [chart, setChart] = useState<{ date: string; vendas: number }[]>([]);
   const [activity, setActivity] = useState<{ type: string; text: string; when: string }[]>([]);
 
   useEffect(() => {
-    if (!reseller) return;
-    (async () => {
-      const [{ data: lic }, { data: purchases }] = await Promise.all([
-        supabase.from('licenses').select('id, sold_at, sold_price_cents, created_at, license_key').eq('reseller_id', reseller.id),
-        supabase.from('reseller_purchases').select('id, package_size, payment_status, created_at').eq('reseller_id', reseller.id).order('created_at', { ascending: false }).limit(5),
-      ]);
+    // Aguarda auth terminar
+    if (authLoading) return;
 
-      const all = lic || [];
-      const soldArr = all.filter(l => l.sold_at);
-      const availableArr = all.filter(l => !l.sold_at);
-      setStats({
-        bought: all.length,
-        available: availableArr.length,
-        sold: soldArr.length,
-        potential: availableArr.length * 14700,
-      });
-
-      // Gráfico: últimos 30 dias
-      const days: Record<string, number> = {};
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        days[d.toISOString().slice(0, 10)] = 0;
-      }
-      soldArr.forEach((l) => {
-        if (!l.sold_at) return;
-        const k = l.sold_at.slice(0, 10);
-        if (k in days) days[k]++;
-      });
-      setChart(Object.entries(days).map(([date, vendas]) => ({ date: date.slice(5), vendas })));
-
-      // Atividade
-      const acts: { type: string; text: string; when: string }[] = [];
-      (purchases || []).forEach((p) => {
-        acts.push({ type: 'purchase', text: `Compra de ${p.package_size} chaves · ${p.payment_status}`, when: p.created_at });
-      });
-      soldArr.slice(-5).reverse().forEach((l) => {
-        acts.push({ type: 'sale', text: `Chave vendida: ${l.license_key?.substring(0, 14)}...`, when: l.sold_at! });
-      });
-      setActivity(acts.sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime()).slice(0, 8));
-
+    // Se terminou de autenticar mas não tem reseller (edge case), para de carregar
+    if (!reseller) {
       setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      // Timeout de segurança pra não travar eternamente
+      const timeoutId = window.setTimeout(() => {
+        if (!cancelled) {
+          setError('Demorou demais pra carregar. Recarregue a página.');
+          setLoading(false);
+        }
+      }, 15000);
+
+      try {
+        const [licRes, purRes] = await Promise.all([
+          supabase.from('licenses').select('id, sold_at, sold_price_cents, created_at, license_key').eq('reseller_id', reseller.id),
+          supabase.from('reseller_purchases').select('id, package_size, payment_status, created_at').eq('reseller_id', reseller.id).order('created_at', { ascending: false }).limit(5),
+        ]);
+
+        if (cancelled) return;
+
+        const all = licRes.data || [];
+        const purchases = purRes.data || [];
+
+        const soldArr = all.filter((l: any) => l.sold_at);
+        const availableArr = all.filter((l: any) => !l.sold_at);
+        setStats({
+          bought: all.length,
+          available: availableArr.length,
+          sold: soldArr.length,
+          potential: availableArr.length * 14700,
+        });
+
+        const days: Record<string, number> = {};
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          days[d.toISOString().slice(0, 10)] = 0;
+        }
+        soldArr.forEach((l: any) => {
+          if (!l.sold_at) return;
+          const k = l.sold_at.slice(0, 10);
+          if (k in days) days[k]++;
+        });
+        setChart(Object.entries(days).map(([date, vendas]) => ({ date: date.slice(5), vendas })));
+
+        const acts: { type: string; text: string; when: string }[] = [];
+        purchases.forEach((p: any) => {
+          acts.push({ type: 'purchase', text: `Compra de ${p.package_size} chaves · ${p.payment_status}`, when: p.created_at });
+        });
+        soldArr.slice(-5).reverse().forEach((l: any) => {
+          acts.push({ type: 'sale', text: `Chave vendida: ${l.license_key?.substring(0, 14)}...`, when: l.sold_at });
+        });
+        setActivity(acts.sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime()).slice(0, 8));
+      } catch (e) {
+        if (!cancelled) setError((e as Error).message || 'Erro ao carregar dados');
+      } finally {
+        window.clearTimeout(timeoutId);
+        if (!cancelled) setLoading(false);
+      }
     })();
-  }, [reseller]);
+
+    return () => { cancelled = true; };
+  }, [reseller, authLoading]);
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><LoaderRing size={40} /></div>;
+
+  if (error) return (
+    <div className="container mx-auto px-4 sm:px-6 py-10">
+      <div className="holo-card p-8 text-center">
+        <p className="text-red-400 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="cta-ghost">Recarregar</button>
+      </div>
+    </div>
+  );
+
+  if (!reseller) return (
+    <div className="container mx-auto px-4 sm:px-6 py-10">
+      <div className="holo-card p-8 text-center">
+        <p className="text-text-muted mb-4">Sua conta de revenda ainda não foi encontrada.</p>
+        <button onClick={() => window.location.reload()} className="cta-ghost">Recarregar</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-10">
