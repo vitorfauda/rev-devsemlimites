@@ -44,7 +44,8 @@ export type ResellerPackage = {
 export type ResellerPurchase = {
   id: string;
   reseller_id: string;
-  package_size: number;
+  plan_code?: '7dias' | '30dias' | 'vitalicio';
+  package_size: number; // legacy (agora = quantity)
   unit_price_cents: number;
   total_cents: number;
   payment_method: 'pix' | 'card';

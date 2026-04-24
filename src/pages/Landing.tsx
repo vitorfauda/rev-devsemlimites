@@ -1,15 +1,42 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, TrendingUp, Package, HeadphonesIcon, Image, Smartphone, ChevronDown, Star } from 'lucide-react';
+import { ArrowRight, Zap, TrendingUp, Package, HeadphonesIcon, Image, Smartphone, ChevronDown, Star, Sparkles } from 'lucide-react';
 import { Hero3D } from '@/components/Hero3D';
 import { formatBRL } from '@/lib/utils';
 import { useState } from 'react';
 
-const packages = [
-  { size: 10, unit: 4990, popular: false },
-  { size: 25, unit: 4490, popular: false },
-  { size: 50, unit: 3990, popular: true },
-  { size: 100, unit: 3490, popular: false },
+// Preview dos planos (dados reais vem do banco em /comprar-chaves)
+const plans = [
+  {
+    code: '7dias',
+    label: '7 dias',
+    icon: Zap,
+    color: '#22d3ee',
+    retail: 4700,
+    priceFrom: 1290,
+    priceTo: 2290,
+    popular: false,
+  },
+  {
+    code: '30dias',
+    label: '30 dias',
+    icon: TrendingUp,
+    color: '#fbbf24',
+    retail: 9700,
+    priceFrom: 1990,
+    priceTo: 3990,
+    popular: false,
+  },
+  {
+    code: 'vitalicio',
+    label: 'Vitalícia',
+    icon: Sparkles,
+    color: '#22c55e',
+    retail: 14700,
+    priceFrom: 3490,
+    priceTo: 5490,
+    popular: true,
+  },
 ];
 
 const benefits = [
@@ -140,7 +167,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ======== PACOTES ======== */}
+      {/* ======== PLANOS ======== */}
       <section className="py-24 relative">
         <div className="mesh-blob" style={{ width: 700, height: 700, top: '30%', left: '40%', background: '#22c55e', opacity: 0.08 }} />
         <div className="container mx-auto px-4 sm:px-6 relative z-10">
@@ -150,56 +177,66 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center max-w-2xl mx-auto mb-16"
           >
-            <div className="text-sm font-semibold text-primary mb-3">PACOTES</div>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Escolha seu ponto de partida</h2>
-            <p className="text-text-muted">Quanto mais chaves, menor o custo unitário.</p>
+            <div className="text-sm font-semibold text-primary mb-3">PLANOS · QUANTIDADE CUSTOMIZÁVEL</div>
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Compre a partir de 1 chave</h2>
+            <p className="text-text-muted">Escolha a duração da licença e a quantidade. Quanto mais chaves, menor o custo.</p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {packages.map((pkg, i) => {
-              const total = pkg.size * pkg.unit;
-              const profit = pkg.size * 14700 - total;
-              return (
-                <motion.div
-                  key={pkg.size}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.08 }}
-                  className={`holo-card p-6 relative ${pkg.popular ? 'holo-permanent lg:scale-105 lg:-translate-y-2' : ''}`}
-                >
-                  {pkg.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold bg-gradient-to-r from-accent-gold to-amber-500 text-void shadow-lg shadow-amber-500/50">
-                      🏆 MAIS VENDIDO
-                    </div>
-                  )}
-                  <div className="text-sm text-text-muted mb-1">Pacote</div>
-                  <div className="text-5xl font-display font-bold mb-1">{pkg.size}</div>
-                  <div className="text-sm text-text-muted mb-5">chaves</div>
-
-                  <div className="space-y-2 mb-6 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Preço/un</span>
-                      <span className="font-semibold font-mono font-tabular">{formatBRL(pkg.unit)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-text-muted">Total</span>
-                      <span className="font-semibold font-mono font-tabular">{formatBRL(total)}</span>
-                    </div>
-                    <div className="h-px my-3" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                    <div className="flex justify-between">
-                      <span className="text-primary font-semibold">Lucro R$147/un</span>
-                      <span className="font-bold text-primary font-mono font-tabular">{formatBRL(profit)}</span>
-                    </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+            {plans.map((p, i) => (
+              <motion.div
+                key={p.code}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className={`holo-card p-7 relative ${p.popular ? 'holo-permanent lg:scale-105' : ''}`}
+              >
+                {p.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold bg-gradient-to-r from-accent-gold to-amber-500 text-void shadow-lg shadow-amber-500/50">
+                    🏆 MAIS VENDIDO
                   </div>
+                )}
 
-                  <Link to="/cadastrar" className={pkg.popular ? 'cta-neon w-full block text-center' : 'cta-ghost w-full block text-center'}>
-                    <span className="relative z-10">Começar</span>
-                  </Link>
-                </motion.div>
-              );
-            })}
+                <div className="h-14 w-14 rounded-2xl flex items-center justify-center mb-5" style={{ background: `${p.color}15`, border: `1px solid ${p.color}35` }}>
+                  <p.icon size={22} style={{ color: p.color }} />
+                </div>
+
+                <div className="text-2xl font-display font-bold mb-1">{p.label}</div>
+                <div className="text-sm text-text-muted mb-6">
+                  Cliente final paga <span className="font-mono font-tabular text-text-primary font-semibold">{formatBRL(p.retail)}</span>
+                </div>
+
+                <div className="space-y-3 mb-6 text-sm">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-text-muted">Seu preço/un</span>
+                    <span className="font-mono font-tabular">
+                      <span className="text-text-primary font-semibold">{formatBRL(p.priceFrom)}</span>
+                      <span className="text-text-dim"> – {formatBRL(p.priceTo)}</span>
+                    </span>
+                  </div>
+                  <div className="text-xs text-text-dim">
+                    A partir de R$ {(p.priceFrom / 100).toFixed(2)} comprando 100+ chaves
+                  </div>
+                  <div className="h-px my-3" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-primary font-semibold">Margem</span>
+                    <span className="font-bold text-primary font-mono font-tabular">
+                      até {Math.round(((p.retail - p.priceFrom) / p.retail) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <Link to="/cadastrar" className={p.popular ? 'cta-neon w-full block text-center' : 'cta-ghost w-full block text-center'}>
+                  <span className="relative z-10">Começar agora</span>
+                </Link>
+              </motion.div>
+            ))}
           </div>
+
+          <p className="text-center text-sm text-text-muted mt-10">
+            Preços escalonados · compre desde <span className="text-primary font-semibold">1 chave</span> até quantas quiser
+          </p>
         </div>
       </section>
 

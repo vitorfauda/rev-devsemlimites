@@ -10,9 +10,9 @@ const steps = [
     points: ['Sem mensalidade', 'Sem fidelidade', 'Acesso imediato após pagamento'],
   },
   {
-    title: 'Compra de pacotes de chaves',
-    desc: 'Escolha o pacote que cabe no seu bolso. Quanto maior, menor o custo por chave.',
-    points: ['10 chaves: R$ 49,90/un', '25 chaves: R$ 44,90/un', '50 chaves: R$ 39,90/un (mais vendido)', '100 chaves: R$ 34,90/un'],
+    title: 'Escolha plano e quantidade',
+    desc: '3 planos disponíveis (7 dias, 30 dias, vitalícia) e compra desde 1 chave. Preço escala por volume.',
+    points: ['7 dias: R$ 12,90 – R$ 22,90/un', '30 dias: R$ 19,90 – R$ 39,90/un', 'Vitalícia: R$ 34,90 – R$ 54,90/un', 'Sem mínimo de compra'],
   },
   {
     title: 'Entrega automática',
