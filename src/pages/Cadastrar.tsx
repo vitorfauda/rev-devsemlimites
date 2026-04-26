@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { ArrowRight, Check, Copy, QrCode, User, Mail, Phone, Lock, FileText } from 'lucide-react';
 import { LoaderRing } from '@/components/LoaderRing';
-import { copyToClipboard, formatBRL, maskCPF, maskPhone, validateCPF } from '@/lib/utils';
+import { copyToClipboard, formatBRL, maskCPF, maskPhone, validateCPF, normalizePhoneE164, validatePhone } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { Button, Card, inputClass } from '@/components/ui';
 
@@ -15,7 +15,7 @@ const step1Schema = z
   .object({
     name: z.string().min(3, 'Nome muito curto'),
     email: z.string().email('Email inválido'),
-    whatsapp: z.string().refine((v) => v.replace(/\D/g, '').length >= 10, 'WhatsApp inválido'),
+    whatsapp: z.string().refine(validatePhone, 'WhatsApp inválido (use +55 27 99999-9999 ou +351 926 670 080)'),
     cpf: z.string().refine((v) => validateCPF(v), 'CPF inválido'),
     password: z.string().min(8, 'Mínimo 8 caracteres'),
     confirmPassword: z.string(),
@@ -88,7 +88,7 @@ export default function Cadastrar() {
         user_id: userId,
         name: data.name,
         email: data.email,
-        whatsapp: data.whatsapp.replace(/\D/g, ''),
+        whatsapp: normalizePhoneE164(data.whatsapp),
         cpf: data.cpf.replace(/\D/g, ''),
       });
       if (insertErr && !insertErr.message.includes('duplicate')) throw new Error(insertErr.message);
@@ -188,8 +188,8 @@ export default function Cadastrar() {
               <Field label="WhatsApp" icon={Phone} error={errors.whatsapp?.message}>
                 <input
                   {...register('whatsapp')}
-                  placeholder="(27) 99999-9999"
-                  maxLength={15}
+                  placeholder="(27) 99999-9999 ou +351 926 670 080"
+                  maxLength={20}
                   className={inputClass + ' pl-10'}
                 />
               </Field>

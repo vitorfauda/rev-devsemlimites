@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Check, Copy, LogOut, User, Shield, Banknote, Link2 } from 'lucide-react';
-import { copyToClipboard, maskCPF, maskPhone } from '@/lib/utils';
+import { copyToClipboard, maskCPF, maskPhone, normalizePhoneE164, validatePhone } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, PageHeader, Section, inputClass } from '@/components/ui';
 
@@ -16,7 +16,13 @@ export default function Perfil() {
 
   const [form, setForm] = useState({
     name: reseller?.name || '',
-    whatsapp: maskPhone(reseller?.whatsapp || ''),
+    // Display: BR (12-13 digits with 55 prefix) → (DD) X XXXX-XXXX, else international with +
+    whatsapp: (() => {
+      const w = reseller?.whatsapp || '';
+      if (!w) return '';
+      if (w.startsWith('55') && (w.length === 12 || w.length === 13)) return maskPhone(w.slice(2));
+      return maskPhone('+' + w);
+    })(),
     pix_key: reseller?.pix_key || '',
   });
 
@@ -24,10 +30,14 @@ export default function Perfil() {
 
   const saveDados = async () => {
     if (!reseller) return;
+    if (form.whatsapp && !validatePhone(form.whatsapp)) {
+      toast.error('WhatsApp inválido');
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from('resellers')
-      .update({ name: form.name, whatsapp: form.whatsapp.replace(/\D/g, ''), pix_key: form.pix_key || null })
+      .update({ name: form.name, whatsapp: form.whatsapp ? normalizePhoneE164(form.whatsapp) : null, pix_key: form.pix_key || null })
       .eq('id', reseller.id);
     setSaving(false);
     if (error) {
@@ -120,7 +130,8 @@ export default function Perfil() {
                   className={inputClass}
                   value={form.whatsapp}
                   onChange={(e) => setForm({ ...form, whatsapp: maskPhone(e.target.value) })}
-                  maxLength={15}
+                  placeholder="(27) 99999-9999 ou +351 926 670 080"
+                  maxLength={20}
                 />
               </Field>
               <Field label="Email">

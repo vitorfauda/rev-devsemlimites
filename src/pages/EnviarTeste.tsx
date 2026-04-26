@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Phone, Clock, Send, Check, Copy, AlertCircle, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoaderRing } from '@/components/LoaderRing';
-import { maskPhone, copyToClipboard, formatDateTime } from '@/lib/utils';
+import { maskPhone, copyToClipboard, formatDateTime, normalizePhoneE164, validatePhone } from '@/lib/utils';
 import { Badge, Button, ButtonLink, Card, PageHeader, Section, inputClass } from '@/components/ui';
 
 type TestResult = {
@@ -48,11 +48,11 @@ export default function EnviarTeste() {
       toast.error('Carregando sua conta…');
       return;
     }
-    const clean = phone.replace(/\D/g, '');
-    if (clean.length < 10) {
-      toast.error('WhatsApp inválido');
+    if (!validatePhone(phone)) {
+      toast.error('WhatsApp inválido. Use o formato +55 27 99999-9999 ou +351 926 670 080');
       return;
     }
+    const clean = normalizePhoneE164(phone);
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-reseller-test', {
@@ -119,7 +119,13 @@ export default function EnviarTeste() {
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div className="p-3 rounded-md bg-[var(--color-surface-2)]/40 border border-[var(--color-border)]">
               <div className="text-[10px] text-[var(--color-text-dim)] uppercase mb-0.5">WhatsApp</div>
-              <div className="text-sm font-mono">{maskPhone(result.phone.slice(2))}</div>
+              <div className="text-sm font-mono">{
+                // BR (12/13 digits with 55 prefix): mostra como (DD) X XXXX-XXXX
+                // Internacional: mostra +XXX XXX XXX XXX
+                result.phone.startsWith('55') && (result.phone.length === 12 || result.phone.length === 13)
+                  ? maskPhone(result.phone.slice(2))
+                  : maskPhone('+' + result.phone)
+              }</div>
             </div>
             <div className="p-3 rounded-md bg-[var(--color-surface-2)]/40 border border-[var(--color-border)]">
               <div className="text-[10px] text-[var(--color-text-dim)] uppercase mb-0.5">Duração</div>
@@ -165,8 +171,8 @@ export default function EnviarTeste() {
                   <input
                     value={phone}
                     onChange={(e) => setPhone(maskPhone(e.target.value))}
-                    maxLength={15}
-                    placeholder="(27) 99999-9999"
+                    maxLength={20}
+                    placeholder="(27) 99999-9999 ou +351 926 670 080"
                     className={inputClass + ' pl-10'}
                     autoFocus
                   />
@@ -278,7 +284,13 @@ export default function EnviarTeste() {
                       <td className="p-3 text-xs text-[var(--color-text-muted)]">
                         {formatDateTime(h.created_at)}
                       </td>
-                      <td className="p-3 text-xs font-mono">{h.customer?.phone ? maskPhone(h.customer.phone.slice(2)) : '—'}</td>
+                      <td className="p-3 text-xs font-mono">{
+                        h.customer?.phone
+                          ? (h.customer.phone.startsWith('55') && (h.customer.phone.length === 12 || h.customer.phone.length === 13)
+                              ? maskPhone(h.customer.phone.slice(2))
+                              : maskPhone('+' + h.customer.phone))
+                          : '—'
+                      }</td>
                       <td className="p-3">
                         <code className="font-mono text-xs">{h.license_key}</code>
                       </td>

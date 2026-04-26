@@ -59,11 +59,55 @@ export function maskCPF(v: string): string {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 }
 
+/**
+ * Máscara de telefone com suporte internacional.
+ *
+ * Detecção:
+ *  - Se input começar com `+` → trata como internacional (E.164), espaça os blocos
+ *  - Senão → assume Brasil, mostra (DD) XXXXX-XXXX
+ *
+ * Limites:
+ *  - Brasil: 11 dígitos (DDD + 9 dígitos)
+ *  - Internacional: até 15 dígitos (limite E.164)
+ */
 export function maskPhone(v: string): string {
-  const d = v.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  const trimmed = String(v || '').trim();
+  const isInternational = trimmed.startsWith('+');
+
+  if (!isInternational) {
+    const d = trimmed.replace(/\D/g, '').slice(0, 11);
+    if (d.length === 0) return '';
+    if (d.length <= 2) return `(${d}`;
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+
+  const d = trimmed.replace(/\D/g, '').slice(0, 15);
+  if (d.length === 0) return '+';
+  if (d.length <= 3) return `+${d}`;
+  if (d.length <= 6) return `+${d.slice(0, 3)} ${d.slice(3)}`;
+  if (d.length <= 9) return `+${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`;
+  if (d.length <= 12) return `+${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9)}`;
+  return `+${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 9)} ${d.slice(9, 12)} ${d.slice(12)}`;
+}
+
+/**
+ * Normaliza para E.164 (apenas dígitos com código do país, sem +).
+ * Brasil é assumido se não tiver `+` e tiver 10-11 dígitos.
+ */
+export function normalizePhoneE164(v: string): string {
+  const trimmed = String(v || '').trim();
+  const hasPlus = trimmed.startsWith('+');
+  const digits = trimmed.replace(/\D/g, '');
+  if (hasPlus) return digits;
+  if (digits.length === 10 || digits.length === 11) return '55' + digits;
+  return digits;
+}
+
+/** Valida se o telefone tem dígitos suficientes pra E.164 (mínimo 10, máximo 15). */
+export function validatePhone(v: string): boolean {
+  const d = normalizePhoneE164(v);
+  return d.length >= 10 && d.length <= 15;
 }
 
 export function maskCEP(v: string): string {
