@@ -20,7 +20,7 @@ export type Reseller = {
   cpf: string;
   ref_code: string;
   status: 'pending' | 'active' | 'suspended' | 'blocked';
-  tier: 'bronze' | 'prata' | 'ouro';
+  tier: 'bronze' | 'prata' | 'ouro' | 'diamante' | 'lendario';
   total_keys_bought: number;
   total_keys_sold: number;
   total_revenue_cents: number;
@@ -28,6 +28,17 @@ export type Reseller = {
   entry_paid: boolean;
   entry_payment_id?: string;
   min_purchase_quantity?: number;
+  // Pagar.me onboarding (Fase 2)
+  pagarme_recipient_id?: string | null;
+  pagarme_kyc_status?: 'pending' | 'under_review' | 'approved' | 'rejected' | 'blocked' | 'inactive' | null;
+  pagarme_kyc_link?: string | null;
+  slug?: string | null;
+  commission_percent?: number;
+  active_customers_count?: number;
+  reseller_status?: string;
+  bank_changed_at?: string | null;
+  tfa_method?: 'totp' | 'email' | null;
+  tfa_enabled_at?: string | null;
   created_at: string;
   updated_at: string;
 };

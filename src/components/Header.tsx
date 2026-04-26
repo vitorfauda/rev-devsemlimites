@@ -10,8 +10,10 @@ const publicLinks = [
 
 const privateLinks = [
   { to: '/dashboard', label: 'Dashboard' },
-  { to: '/comprar-chaves', label: 'Comprar chaves' },
-  { to: '/minhas-chaves', label: 'Minhas chaves' },
+  { to: '/escala', label: 'Plano de Escala' },
+  { to: '/comprar-chaves', label: 'Meus Links' },
+  { to: '/minhas-chaves', label: 'Meus Clientes' },
+  { to: '/extrato', label: 'Extrato' },
   { to: '/enviar-teste', label: 'Enviar teste' },
   { to: '/materiais', label: 'Materiais' },
   { to: '/suporte', label: 'Suporte' },
@@ -67,7 +69,10 @@ export function Header() {
         <div className="flex items-center gap-2">
           {session ? (
             <>
-              <Link to="/perfil" className="hidden sm:block px-4 py-2 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-all">
+              <Link to="/seguranca" className="hidden sm:block px-3 py-2 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-all">
+                Segurança
+              </Link>
+              <Link to="/perfil" className="hidden sm:block px-3 py-2 rounded-xl text-sm text-text-muted hover:text-text-primary hover:bg-white/5 transition-all">
                 Perfil
               </Link>
               <button onClick={handleSignOut} className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all">

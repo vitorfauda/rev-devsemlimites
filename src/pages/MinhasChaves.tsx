@@ -1,223 +1,276 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase, type License } from '@/lib/supabase';
-import { Check, Copy, Search, X } from 'lucide-react';
-import { toast } from 'sonner';
-import { copyToClipboard, formatBRL, formatDate, maskPhone } from '@/lib/utils';
+// ============================================================
+// "Meus Clientes" — subscriptions ativas (assinaturas recorrentes)
+// ============================================================
+// Conceito novo: lista de clientes que assinaram pelo seu link, com
+// status de pagamento, próxima cobrança e comissão de cada um.
+// (Arquivo mantém nome MinhasChaves.tsx pra rota legacy /minhas-chaves)
+// ============================================================
+
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
+import {
+  Users, Search, CheckCircle2, Clock, AlertTriangle, XCircle,
+  Calendar, CreditCard, QrCode, ArrowRight, RefreshCw, TrendingUp, Filter,
+} from 'lucide-react';
 import { LoaderRing } from '@/components/LoaderRing';
+import { formatBRL, formatDateTime } from '@/lib/utils';
 
-type Tab = 'all' | 'available' | 'sold';
+type SubStatus = 'active' | 'past_due' | 'canceled' | 'pending' | 'suspended';
 
-export default function MinhasChaves() {
+interface Subscription {
+  id: string;
+  plan_code: string;
+  payment_method: string;
+  status: SubStatus;
+  amount_cents: number;
+  commission_percent_at_sale: number;
+  next_billing_at: string | null;
+  current_period_end: string | null;
+  created_at: string;
+  card_brand?: string | null;
+  card_last_4?: string | null;
+  failed_charges_count?: number;
+  customers?: { id: string; name?: string; email?: string; phone?: string } | null;
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  monthly: 'Mensal', yearly: 'Anual', '7dias': '7 Dias', '1dia': '1 Dia',
+};
+
+const STATUS_META: Record<SubStatus, { label: string; color: string; icon: any }> = {
+  active:    { label: 'Ativo',          color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
+  pending:   { label: 'Aguardando 1ª',  color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',     icon: Clock },
+  past_due:  { label: 'Em atraso',      color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', icon: AlertTriangle },
+  suspended: { label: 'Suspenso',       color: 'text-red-400 bg-red-500/10 border-red-500/20',         icon: XCircle },
+  canceled:  { label: 'Cancelado',      color: 'text-text-dim bg-white/5 border-white/10',              icon: XCircle },
+};
+
+export default function MeusClientes() {
   const { reseller } = useAuth();
-  const [licenses, setLicenses] = useState<License[]>([]);
-  const [tab, setTab] = useState<Tab>('all');
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [sellModal, setSellModal] = useState<License | null>(null);
+  const [subs, setSubs] = useState<Subscription[]>([]);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | SubStatus>('all');
 
   const load = async () => {
     if (!reseller) return;
     setLoading(true);
-    const { data } = await supabase.from('licenses')
-      .select('*').eq('reseller_id', reseller.id)
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('*, customers(id, name, email, phone)')
+      .eq('reseller_id', reseller.id)
       .order('created_at', { ascending: false });
-    setLicenses((data || []) as License[]);
+    setSubs((data || []) as any);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [reseller]);
+  useEffect(() => { load(); }, [reseller?.id]);
 
-  const filtered = licenses.filter(l => {
-    if (tab === 'available' && l.sold_at) return false;
-    if (tab === 'sold' && !l.sold_at) return false;
-    if (search && !l.license_key?.toLowerCase().includes(search.toLowerCase()) && !l.sold_to_name?.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
-
-  const counts = {
-    all: licenses.length,
-    available: licenses.filter(l => !l.sold_at).length,
-    sold: licenses.filter(l => l.sold_at).length,
-  };
-
-  const handleCopy = async (id: string, key: string) => {
-    await copyToClipboard(key);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-    toast.success('Chave copiada!');
-  };
-
-  const exportCSV = () => {
-    const lines = ['chave,status,cliente,whatsapp,vendida_em,valor'];
-    licenses.forEach(l => {
-      lines.push([
-        l.license_key,
-        l.sold_at ? 'vendida' : 'disponivel',
-        l.sold_to_name || '',
-        l.sold_to_whatsapp || '',
-        l.sold_at || '',
-        l.sold_price_cents ? (l.sold_price_cents / 100).toFixed(2) : '',
-      ].join(','));
+  const filtered = useMemo(() => {
+    return subs.filter(s => {
+      if (filterStatus !== 'all' && s.status !== filterStatus) return false;
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        s.customers?.name?.toLowerCase().includes(q) ||
+        s.customers?.email?.toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q)
+      );
     });
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `chaves-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-  };
+  }, [subs, filterStatus, search]);
 
-  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><LoaderRing size={40} /></div>;
+  const counts = useMemo(() => ({
+    all: subs.length,
+    active: subs.filter(s => s.status === 'active').length,
+    past_due: subs.filter(s => s.status === 'past_due').length,
+    suspended: subs.filter(s => s.status === 'suspended').length,
+    canceled: subs.filter(s => s.status === 'canceled').length,
+  }), [subs]);
+
+  // MRR estimado dos ativos (sua comissão)
+  const mrrCommission = useMemo(() => {
+    return subs
+      .filter(s => s.status === 'active')
+      .reduce((sum, s) => {
+        const monthlyValue = s.plan_code === 'yearly' ? s.amount_cents / 12 : s.amount_cents;
+        const commission = monthlyValue * ((s.commission_percent_at_sale || 60) / 100);
+        return sum + commission;
+      }, 0);
+  }, [subs]);
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-10">
-      <div className="flex flex-wrap justify-between items-start gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-display font-bold mb-2">Minhas chaves</h1>
-          <p className="text-text-muted">Gerencie suas licenças e marque as vendidas</p>
-        </div>
-        <button onClick={exportCSV} className="cta-ghost text-sm">Exportar CSV</button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto">
-        {([
-          ['all', `Todas (${counts.all})`],
-          ['available', `Disponíveis (${counts.available})`],
-          ['sold', `Vendidas (${counts.sold})`],
-        ] as const).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k as Tab)} className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-            tab === k ? 'bg-primary text-void' : 'bg-white/5 text-text-muted hover:text-text-primary'
-          }`}>
-            {l}
+    <div className="container mx-auto px-4 sm:px-6 py-8 max-w-6xl">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
+          <h1 className="text-3xl font-display font-bold flex items-center gap-3">
+            <Users className="size-7 text-primary" /> Meus Clientes
+          </h1>
+          <button onClick={load} className="cta-ghost !py-2 !px-3 text-sm inline-flex items-center gap-2">
+            <RefreshCw size={14} /> Atualizar
           </button>
-        ))}
-      </div>
+        </div>
+        <p className="text-text-muted mb-6 text-sm">
+          Clientes que assinaram pelo seu link. Cada renovação gera comissão automática.
+        </p>
 
-      {/* Busca */}
-      <div className="relative mb-6">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim" />
-        <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por chave ou cliente..."
-          className="input-dsl pl-10"
-        />
-      </div>
+        {/* Stats topo */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatCard label="Total" value={String(counts.all)} icon={Users} />
+          <StatCard label="Ativos" value={String(counts.active)} icon={CheckCircle2} highlight />
+          <StatCard label="MRR (sua parte)" value={formatBRL(Math.round(mrrCommission))} icon={TrendingUp} highlight />
+          <StatCard label="Em risco" value={String(counts.past_due + counts.suspended)} icon={AlertTriangle} warning={counts.past_due + counts.suspended > 0} />
+        </div>
 
-      {/* Tabela */}
-      <div className="holo-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="p-8 text-center text-text-muted">
-            {licenses.length === 0 ? 'Você ainda não tem chaves. Compre um pacote!' : 'Nenhuma chave encontrada.'}
+        {/* Filtros */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar cliente por nome, email ou ID..."
+              className="input-dsl !pl-9 !py-2 text-sm"
+            />
           </div>
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value as any)}
+            className="input-dsl !py-2 text-sm !w-auto"
+          >
+            <option value="all">Todos ({counts.all})</option>
+            <option value="active">Ativos ({counts.active})</option>
+            <option value="past_due">Em atraso ({counts.past_due})</option>
+            <option value="suspended">Suspensos ({counts.suspended})</option>
+            <option value="canceled">Cancelados ({counts.canceled})</option>
+          </select>
+        </div>
+
+        {/* Lista */}
+        {loading ? (
+          <div className="grid place-items-center py-16"><LoaderRing /></div>
+        ) : filtered.length === 0 ? (
+          <EmptyState search={search} hasAny={subs.length > 0} />
         ) : (
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-text-muted text-left" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                  <th className="p-4 font-medium">Chave</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Cliente</th>
-                  <th className="p-4 font-medium">Vendida em</th>
-                  <th className="p-4 font-medium text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((l) => (
-                  <tr key={l.id} className="border-b hover:bg-white/5" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-                    <td className="p-4 font-mono text-xs">{l.license_key}</td>
-                    <td className="p-4">
-                      {l.sold_at ? (
-                        <span className="text-xs px-2 py-1 rounded-full bg-accent-gold/15 text-accent-gold">Vendida</span>
-                      ) : (
-                        <span className="text-xs px-2 py-1 rounded-full bg-primary/15 text-primary">Disponível</span>
-                      )}
-                    </td>
-                    <td className="p-4 text-text-muted">{l.sold_to_name || '—'}</td>
-                    <td className="p-4 text-text-muted">{formatDate(l.sold_at)}</td>
-                    <td className="p-4 text-right">
-                      <div className="inline-flex gap-1">
-                        <button onClick={() => handleCopy(l.id, l.license_key)} className="h-8 w-8 rounded-lg hover:bg-white/10 flex items-center justify-center">
-                          {copiedId === l.id ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
-                        </button>
-                        {!l.sold_at && (
-                          <button onClick={() => setSellModal(l)} className="text-xs px-3 h-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20">
-                            Marcar vendida
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {filtered.map(sub => <SubscriptionRow key={sub.id} sub={sub} />)}
           </div>
         )}
-      </div>
 
-      {sellModal && <SellModal license={sellModal} onClose={() => setSellModal(null)} onDone={() => { setSellModal(null); load(); }} />}
+        <p className="text-xs text-text-dim mt-6 text-center">
+          💡 Os dados de cada cliente são privados — você só vê quem comprou pelo seu link.
+        </p>
+      </motion.div>
     </div>
   );
 }
 
-function SellModal({ license, onClose, onDone }: { license: License; onClose: () => void; onDone: () => void }) {
-  const [name, setName] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [price, setPrice] = useState('147.00');
-  const [saving, setSaving] = useState(false);
+function StatCard({ label, value, icon: Icon, highlight = false, warning = false }: {
+  label: string; value: string; icon: any; highlight?: boolean; warning?: boolean;
+}) {
+  const bg = warning ? 'bg-amber-500/10 border-amber-500/30' :
+             highlight ? 'bg-emerald-500/10 border-emerald-500/30' :
+             'bg-white/5 border-white/5';
+  const valColor = warning ? 'text-amber-400' : highlight ? 'text-emerald-400' : 'text-text-primary';
+  return (
+    <div className={`rounded-xl p-3 border ${bg}`}>
+      <div className="flex items-center gap-1.5 text-xs text-text-muted mb-1">
+        <Icon size={11} /> {label}
+      </div>
+      <div className={`text-xl font-bold ${valColor}`}>{value}</div>
+    </div>
+  );
+}
 
-  const save = async () => {
-    if (!name.trim()) { toast.error('Informe o nome do cliente'); return; }
-    setSaving(true);
-    const priceCents = Math.round(parseFloat(price.replace(',', '.')) * 100);
-    const { error } = await supabase.from('licenses').update({
-      sold_to_name: name.trim(),
-      sold_to_whatsapp: whatsapp.replace(/\D/g, ''),
-      sold_at: new Date().toISOString(),
-      sold_price_cents: priceCents,
-    }).eq('id', license.id);
-    setSaving(false);
-    if (error) { toast.error('Erro ao salvar: ' + error.message); return; }
-    toast.success('Chave marcada como vendida!');
-    onDone();
-  };
+function SubscriptionRow({ sub }: { sub: Subscription }) {
+  const meta = STATUS_META[sub.status] || STATUS_META.active;
+  const Icon = meta.icon;
+  const customerName = sub.customers?.name || 'Cliente sem nome';
+  const customerEmail = sub.customers?.email || '—';
+  const planLabel = PLAN_LABEL[sub.plan_code] || sub.plan_code;
+  const monthlyValue = sub.plan_code === 'yearly' ? sub.amount_cents / 12 : sub.amount_cents;
+  const myCommission = Math.round(monthlyValue * ((sub.commission_percent_at_sale || 60) / 100));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        onClick={(e) => e.stopPropagation()}
-        className="holo-card holo-permanent relative w-full max-w-md p-6"
-      >
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5">
-          <X size={18} />
-        </button>
-        <h3 className="text-xl font-display font-bold mb-1">Marcar como vendida</h3>
-        <p className="text-xs text-text-muted font-mono mb-5">{license.license_key}</p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-text-muted mb-2">Nome do cliente</label>
-            <input value={name} onChange={e => setName(e.target.value)} className="input-dsl" placeholder="João Silva" />
-          </div>
-          <div>
-            <label className="block text-sm text-text-muted mb-2">WhatsApp (opcional)</label>
-            <input value={whatsapp} onChange={e => setWhatsapp(maskPhone(e.target.value))} maxLength={15} className="input-dsl" placeholder="(27) 99999-9999" />
-          </div>
-          <div>
-            <label className="block text-sm text-text-muted mb-2">Valor vendido (R$)</label>
-            <input value={price} onChange={e => setPrice(e.target.value)} className="input-dsl font-mono" placeholder="147.00" />
-            <div className="text-xs text-text-muted mt-1">Sugerido: {formatBRL(14700)}</div>
-          </div>
-          <button onClick={save} disabled={saving} className="cta-neon w-full">
-            <span className="relative z-10">{saving ? 'Salvando...' : 'Confirmar venda'}</span>
-          </button>
+    <div className="holo-card p-4 hover:border-primary/30 transition-all">
+      <div className="flex items-start gap-3 flex-wrap sm:flex-nowrap">
+        {/* Avatar */}
+        <div className="size-11 rounded-xl bg-primary/10 grid place-items-center text-base font-bold text-primary shrink-0">
+          {customerName[0]?.toUpperCase()}
         </div>
-      </motion.div>
+
+        {/* Info principal */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-2 flex-wrap">
+            <div className="font-semibold truncate">{customerName}</div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wider inline-flex items-center gap-1 ${meta.color}`}>
+              <Icon size={10} /> {meta.label}
+            </span>
+          </div>
+          <div className="text-xs text-text-muted truncate">{customerEmail}</div>
+          <div className="flex items-center gap-3 mt-2 text-xs text-text-dim flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              {sub.payment_method === 'pix' ? <QrCode size={11} /> : <CreditCard size={11} />}
+              {sub.payment_method === 'pix' ? 'PIX' : `Cartão ${sub.card_last_4 ? `••${sub.card_last_4}` : ''}`}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Calendar size={11} />
+              {sub.next_billing_at
+                ? `Renova ${new Date(sub.next_billing_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`
+                : '—'}
+            </span>
+          </div>
+        </div>
+
+        {/* Valores */}
+        <div className="text-right shrink-0 pl-2">
+          <div className="text-xs text-text-dim">{planLabel}</div>
+          <div className="font-bold text-emerald-400 text-sm">+{formatBRL(myCommission)}</div>
+          <div className="text-[10px] text-text-dim">/mês equiv.</div>
+        </div>
+      </div>
+
+      {/* Aviso falhas */}
+      {(sub.failed_charges_count || 0) > 0 && sub.status !== 'canceled' && (
+        <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
+          <AlertTriangle size={12} /> {sub.failed_charges_count} cobrança(s) falhada(s) — em retentativa automática
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ search, hasAny }: { search: string; hasAny: boolean }) {
+  if (search) {
+    return (
+      <div className="text-center py-12">
+        <Search size={28} className="text-text-dim mx-auto mb-2" />
+        <p className="text-text-muted text-sm">Nenhum cliente encontrado pra "{search}"</p>
+      </div>
+    );
+  }
+  if (hasAny) {
+    return (
+      <div className="text-center py-12">
+        <Filter size={28} className="text-text-dim mx-auto mb-2" />
+        <p className="text-text-muted text-sm">Nenhum cliente com esse filtro.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="text-center py-12 px-4">
+      <div className="size-16 rounded-full bg-primary/10 grid place-items-center mx-auto mb-4">
+        <Users size={28} className="text-primary" />
+      </div>
+      <h3 className="font-semibold mb-2">Você ainda não tem clientes</h3>
+      <p className="text-text-muted text-sm mb-4 max-w-sm mx-auto">
+        Compartilhe seu link de venda e quando alguém assinar, vai aparecer aqui.
+      </p>
+      <Link to="/comprar-chaves" className="cta-neon inline-flex items-center gap-2 text-sm !py-2">
+        Ver meu link <ArrowRight size={14} />
+      </Link>
     </div>
   );
 }
