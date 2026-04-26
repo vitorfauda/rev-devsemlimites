@@ -5,7 +5,6 @@ import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { useAuth } from '@/hooks/useAuth';
 
-// Rotas que SEMPRE mostram Header público (mesmo logado)
 const PUBLIC_ROUTES = ['/', '/login', '/cadastrar', '/seja-revenda', '/termos', '/privacidade'];
 
 export function Layout() {
@@ -17,10 +16,9 @@ export function Layout() {
 
   if (useSidebar) {
     return (
-      <div className="relative min-h-screen">
-        <div className="grain" />
+      <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
         <Sidebar />
-        <main className="md:ml-64 min-h-screen pb-20 md:pb-0 relative z-[2]">
+        <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
           <Outlet />
         </main>
         <BottomNav />
@@ -29,10 +27,9 @@ export function Layout() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col">
-      <div className="grain" />
+    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
       <Header />
-      <main className="flex-1 relative z-[2]">
+      <main className="flex-1">
         <Outlet />
       </main>
       <Footer />

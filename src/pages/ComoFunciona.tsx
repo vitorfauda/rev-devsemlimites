@@ -1,98 +1,37 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, Check } from 'lucide-react';
-import { formatBRL } from '@/lib/utils';
-
-const steps = [
-  {
-    title: 'Cadastro inicial — R$ 9,90',
-    desc: 'Pagamento único de ativação. Acesso vitalício ao painel de revenda, materiais de divulgação e grupo VIP.',
-    points: ['Sem mensalidade', 'Sem fidelidade', 'Acesso imediato após pagamento'],
-  },
-  {
-    title: 'Escolha plano e quantidade',
-    desc: '3 planos disponíveis (7 dias, 30 dias, vitalícia). Compra mínima de 2 chaves. Preço escala por volume.',
-    points: ['7 dias: R$ 14,90 – R$ 16,90/un', '30 dias: R$ 24,90 – R$ 29,90/un', 'Vitalícia: R$ 34,90 – R$ 39,90/un', 'Mínimo de 2 chaves · acima de 25 o preço cai'],
-  },
-  {
-    title: 'Entrega automática',
-    desc: 'Assim que o PIX é confirmado, as chaves aparecem no seu painel prontas para uso.',
-    points: ['Chaves vitalícias', 'Ativação automática na primeira validação', 'Sem data de expiração'],
-  },
-  {
-    title: 'Revenda e lucro',
-    desc: 'Venda cada chave por até R$ 147 (preço oficial). Você define o preço. Lucro direto.',
-    points: ['Margem de até 73%', 'Controle total sobre seu negócio', 'Painel pra acompanhar tudo'],
-  },
-];
+import { ArrowRight } from 'lucide-react';
+import { ButtonLink, Card, PageHeader, Section } from '@/components/ui';
 
 export default function ComoFunciona() {
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-16">
-      <div className="max-w-3xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <div className="text-sm font-semibold text-primary mb-3">COMO FUNCIONA</div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-display font-bold mb-4">O programa completo</h1>
-          <p className="text-lg text-text-muted">Tudo que você precisa saber antes de entrar</p>
-        </motion.div>
+    <Section className="max-w-[800px]">
+      <PageHeader
+        title="Como funciona"
+        description="O programa de revenda DSL em 4 passos simples"
+      />
 
-        <div className="space-y-6">
-          {steps.map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              className="holo-card p-8"
-            >
-              <div className="flex gap-6">
-                <div className="text-5xl font-display font-bold text-gradient shrink-0 w-16">0{i + 1}</div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">{s.title}</h3>
-                  <p className="text-text-muted mb-5">{s.desc}</p>
-                  <ul className="space-y-2">
-                    {s.points.map((p, j) => (
-                      <li key={j} className="flex items-start gap-2 text-sm">
-                        <Check size={16} className="text-primary mt-0.5 shrink-0" />
-                        <span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Exemplo de lucro */}
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="holo-card holo-permanent p-8 mt-10">
-          <h3 className="text-2xl font-display font-bold mb-6 text-center">Exemplo real — Pacote 50 chaves</h3>
-          <div className="grid sm:grid-cols-3 gap-4 text-center mb-6">
-            <div>
-              <div className="text-sm text-text-muted mb-1">Você paga</div>
-              <div className="text-2xl font-display font-bold font-mono font-tabular">{formatBRL(199500)}</div>
-              <div className="text-xs text-text-muted">R$ 39,90/chave</div>
-            </div>
-            <div>
-              <div className="text-sm text-text-muted mb-1">Você vende</div>
-              <div className="text-2xl font-display font-bold font-mono font-tabular">{formatBRL(735000)}</div>
-              <div className="text-xs text-text-muted">R$ 147/chave × 50</div>
-            </div>
-            <div>
-              <div className="text-sm text-primary mb-1">Seu lucro</div>
-              <div className="text-2xl font-display font-bold font-mono font-tabular text-primary">{formatBRL(535500)}</div>
-              <div className="text-xs text-primary">+268%</div>
-            </div>
-          </div>
-        </motion.div>
-
-        <div className="text-center mt-12">
-          <Link to="/cadastrar" className="cta-neon inline-flex items-center gap-2 text-lg !px-10 !py-4">
-            <span className="relative z-10 flex items-center gap-2">Começar agora <ArrowRight size={20} /></span>
-          </Link>
-        </div>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {[
+          { n: '01', t: 'Cadastra', d: 'R$ 9,90 entrada única. Configura sua conta de recebimento Pagar.me em 3 minutos.' },
+          { n: '02', t: 'Compartilha seu link', d: 'Link único pay.devsemlimites.site/c/seunome. Posta em WhatsApp, IG, TikTok, grupos.' },
+          { n: '03', t: 'Cliente assina', d: 'Você não faz nada. Checkout cuida e cobra todo mês automaticamente.' },
+          { n: '04', t: 'Você recebe', d: 'Comissão cai no seu Pagar.me a cada renovação. Saca quando quiser.' },
+        ].map((s) => (
+          <Card key={s.n} className="p-6">
+            <div className="text-xs text-[var(--color-text-dim)] font-mono mb-2">{s.n}</div>
+            <div className="font-medium mb-1.5">{s.t}</div>
+            <div className="text-sm text-[var(--color-text-muted)] leading-relaxed">{s.d}</div>
+          </Card>
+        ))}
       </div>
-    </div>
+
+      <div className="mt-8 text-center">
+        <Link to="/cadastrar">
+          <ButtonLink size="lg">
+            Quero ser revenda <ArrowRight size={16} />
+          </ButtonLink>
+        </Link>
+      </div>
+    </Section>
   );
 }
