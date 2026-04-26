@@ -201,8 +201,15 @@ function RecebimentoTab() {
                       <button
                         type="button"
                         key={b.code}
-                        onClick={() => {
-                          setValue('bank', b.code);
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setValue('bank', b.code, { shouldValidate: true, shouldDirty: true });
+                          setBankSearch('');
+                          setShowBankList(false);
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          setValue('bank', b.code, { shouldValidate: true, shouldDirty: true });
                           setBankSearch('');
                           setShowBankList(false);
                         }}

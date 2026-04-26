@@ -572,8 +572,16 @@ function StepBank({ initial, onBack, onNext, submitting }: { initial: StepBankFo
                 <button
                   type="button"
                   key={b.code}
-                  onClick={() => {
-                    setValue('bank', b.code);
+                  onMouseDown={(e) => {
+                    // Previne o input acima de blur antes do click ser processado
+                    e.preventDefault();
+                    setValue('bank', b.code, { shouldValidate: true, shouldDirty: true });
+                    setBankSearch('');
+                    setShowBankList(false);
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    setValue('bank', b.code, { shouldValidate: true, shouldDirty: true });
                     setBankSearch('');
                     setShowBankList(false);
                   }}
