@@ -9,19 +9,22 @@ import { ArrowRight, Check, Copy, QrCode, User, Mail, Phone, Lock, FileText } fr
 import { LoaderRing } from '@/components/LoaderRing';
 import { copyToClipboard, formatBRL, maskCPF, maskPhone, validateCPF } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { Button, Card, inputClass } from '@/components/ui';
 
-const step1Schema = z.object({
-  name: z.string().min(3, 'Nome muito curto'),
-  email: z.string().email('Email inválido'),
-  whatsapp: z.string().refine((v) => v.replace(/\D/g, '').length >= 10, 'WhatsApp inválido'),
-  cpf: z.string().refine((v) => validateCPF(v), 'CPF inválido'),
-  password: z.string().min(8, 'Mínimo 8 caracteres'),
-  confirmPassword: z.string(),
-  terms: z.boolean().refine((v) => v === true, { message: 'Aceite os termos' }),
-}).refine((d) => d.password === d.confirmPassword, {
-  message: 'Senhas não coincidem',
-  path: ['confirmPassword'],
-});
+const step1Schema = z
+  .object({
+    name: z.string().min(3, 'Nome muito curto'),
+    email: z.string().email('Email inválido'),
+    whatsapp: z.string().refine((v) => v.replace(/\D/g, '').length >= 10, 'WhatsApp inválido'),
+    cpf: z.string().refine((v) => validateCPF(v), 'CPF inválido'),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
+    confirmPassword: z.string(),
+    terms: z.boolean().refine((v) => v === true, { message: 'Aceite os termos' }),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'Senhas não coincidem',
+    path: ['confirmPassword'],
+  });
 type Step1Form = z.infer<typeof step1Schema>;
 
 export default function Cadastrar() {
@@ -42,22 +45,28 @@ export default function Cadastrar() {
 
   const whatsapp = watch('whatsapp');
   const cpf = watch('cpf');
-  useEffect(() => { setValue('whatsapp', maskPhone(whatsapp || '')); }, [whatsapp, setValue]);
-  useEffect(() => { setValue('cpf', maskCPF(cpf || '')); }, [cpf, setValue]);
+  useEffect(() => {
+    setValue('whatsapp', maskPhone(whatsapp || ''));
+  }, [whatsapp, setValue]);
+  useEffect(() => {
+    setValue('cpf', maskCPF(cpf || ''));
+  }, [cpf, setValue]);
 
-  // Se já tá logado e tem reseller, redireciona
   useEffect(() => {
     if (session && reseller?.entry_paid) nav('/dashboard');
     if (session && reseller && !reseller.entry_paid) setStep(2);
   }, [session, reseller, nav]);
 
-  // Cleanup do polling
-  useEffect(() => () => { if (pollIntervalId) clearInterval(pollIntervalId); }, [pollIntervalId]);
+  useEffect(
+    () => () => {
+      if (pollIntervalId) clearInterval(pollIntervalId);
+    },
+    [pollIntervalId],
+  );
 
   const onStep1Submit = async (data: Step1Form) => {
     setCreating(true);
     try {
-      // 1) signup no Supabase Auth
       const { data: signup, error: signupErr } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -67,7 +76,6 @@ export default function Cadastrar() {
       const userId = signup.user?.id;
       if (!userId) throw new Error('Falha ao criar conta');
 
-      // 2) Garante sessão ativa (caso o signup nao retorne session por algum motivo)
       if (!signup.session) {
         const { error: signInErr } = await supabase.auth.signInWithPassword({
           email: data.email,
@@ -76,7 +84,6 @@ export default function Cadastrar() {
         if (signInErr) throw new Error('Conta criada, mas falha ao logar: ' + signInErr.message);
       }
 
-      // 3) insere em resellers (agora auth.uid() esta populado)
       const { error: insertErr } = await supabase.from('resellers').insert({
         user_id: userId,
         name: data.name,
@@ -87,7 +94,7 @@ export default function Cadastrar() {
       if (insertErr && !insertErr.message.includes('duplicate')) throw new Error(insertErr.message);
 
       await refreshReseller();
-      toast.success('Conta criada! Finalize o pagamento para ativar.');
+      toast.success('Conta criada. Finalize o pagamento para ativar');
       setStep(2);
     } catch (e) {
       toast.error((e as Error).message);
@@ -97,7 +104,10 @@ export default function Cadastrar() {
   };
 
   const startPayment = async () => {
-    if (!reseller) { toast.error('Recarregue a página'); return; }
+    if (!reseller) {
+      toast.error('Recarregue a página');
+      return;
+    }
     setPaying(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-reseller-payment', {
@@ -107,12 +117,11 @@ export default function Cadastrar() {
       if (!data?.ok) throw new Error(data?.error || 'Falha ao criar PIX');
       setPix({ qr: data.qr_code_base64, text: data.qr_code_text, expires: data.expires_at });
 
-      // Polling a cada 4s
       const id = window.setInterval(async () => {
         const { data: r } = await supabase.from('resellers').select('entry_paid').eq('id', reseller.id).single();
         if (r?.entry_paid) {
           clearInterval(id);
-          toast.success('Pagamento confirmado! Bem-vindo ao time.');
+          toast.success('Pagamento confirmado. Bem-vindo ao time');
           await refreshReseller();
           nav('/dashboard');
         }
@@ -128,116 +137,174 @@ export default function Cadastrar() {
   const handleCopyPix = async () => {
     if (!pix?.text) return;
     const ok = await copyToClipboard(pix.text);
-    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); toast.success('Copiado!'); }
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success('Copiado');
+    }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] py-12 px-4 sm:px-6 relative">
-      <div className="mesh-blob" style={{ width: 500, height: 500, top: 0, left: '30%', background: '#22c55e' }} />
-
-      <div className="max-w-2xl mx-auto relative z-10">
+    <div className="min-h-[calc(100vh-3.5rem)] py-12 px-6">
+      <div className="max-w-2xl mx-auto">
         {/* Stepper */}
         <div className="flex items-center justify-center gap-3 mb-10">
           {[1, 2].map((n) => (
             <div key={n} className="flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold transition-all ${step >= n ? 'bg-primary text-void shadow-lg shadow-primary/50' : 'bg-white/5 text-text-muted'}`}>
-                {step > n ? <Check size={18} /> : n}
+              <div
+                className={
+                  'size-8 rounded-md flex items-center justify-center text-sm font-medium transition-all border ' +
+                  (step >= n
+                    ? 'bg-[var(--color-primary)] text-black border-transparent'
+                    : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] border-[var(--color-border)]')
+                }
+              >
+                {step > n ? <Check size={14} /> : n}
               </div>
-              {n === 1 && <div className={`h-px w-12 transition-all ${step >= 2 ? 'bg-primary' : 'bg-white/10'}`} />}
+              {n === 1 && (
+                <div
+                  className={
+                    'h-px w-12 transition-all ' +
+                    (step >= 2 ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]')
+                  }
+                />
+              )}
             </div>
           ))}
         </div>
 
         {step === 1 && (
-          <div className="holo-card holo-permanent p-8 sm:p-10">
-            <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">Cadastro de revendedor</h1>
-            <p className="text-text-muted mb-8 text-sm">Preencha seus dados para começar</p>
+          <Card className="p-8">
+            <h1 className="text-2xl font-semibold tracking-tight">Cadastro de revendedor</h1>
+            <p className="text-sm text-[var(--color-text-muted)] mt-1 mb-7">Preencha seus dados para começar</p>
 
             <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-4">
               <Field label="Nome completo" icon={User} error={errors.name?.message}>
-                <input {...register('name')} placeholder="João da Silva" className={`input-dsl pl-10 ${errors.name ? 'error' : ''}`} />
+                <input {...register('name')} placeholder="João da Silva" className={inputClass + ' pl-10'} />
               </Field>
               <Field label="Email" icon={Mail} error={errors.email?.message}>
-                <input {...register('email')} type="email" placeholder="seu@email.com" className={`input-dsl pl-10 ${errors.email ? 'error' : ''}`} />
+                <input {...register('email')} type="email" placeholder="seu@email.com" className={inputClass + ' pl-10'} />
               </Field>
               <Field label="WhatsApp" icon={Phone} error={errors.whatsapp?.message}>
-                <input {...register('whatsapp')} placeholder="(27) 99999-9999" maxLength={15} className={`input-dsl pl-10 ${errors.whatsapp ? 'error' : ''}`} />
+                <input
+                  {...register('whatsapp')}
+                  placeholder="(27) 99999-9999"
+                  maxLength={15}
+                  className={inputClass + ' pl-10'}
+                />
               </Field>
               <Field label="CPF" icon={FileText} error={errors.cpf?.message}>
-                <input {...register('cpf')} placeholder="000.000.000-00" maxLength={14} className={`input-dsl pl-10 ${errors.cpf ? 'error' : ''}`} />
+                <input
+                  {...register('cpf')}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  className={inputClass + ' pl-10'}
+                />
               </Field>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-3">
                 <Field label="Senha" icon={Lock} error={errors.password?.message}>
-                  <input {...register('password')} type="password" placeholder="••••••••" className={`input-dsl pl-10 ${errors.password ? 'error' : ''}`} />
+                  <input
+                    {...register('password')}
+                    type="password"
+                    placeholder="••••••••"
+                    className={inputClass + ' pl-10'}
+                  />
                 </Field>
                 <Field label="Confirmar senha" icon={Lock} error={errors.confirmPassword?.message}>
-                  <input {...register('confirmPassword')} type="password" placeholder="••••••••" className={`input-dsl pl-10 ${errors.confirmPassword ? 'error' : ''}`} />
+                  <input
+                    {...register('confirmPassword')}
+                    type="password"
+                    placeholder="••••••••"
+                    className={inputClass + ' pl-10'}
+                  />
                 </Field>
               </div>
 
-              <label className="flex items-start gap-3 text-sm pt-2 cursor-pointer">
-                <input {...register('terms')} type="checkbox" className="mt-1 w-4 h-4 accent-primary" />
-                <span className="text-text-muted">Li e aceito os <a href="#" className="text-primary">termos de revenda</a></span>
+              <label className="flex items-start gap-2.5 text-sm cursor-pointer pt-1">
+                <input
+                  {...register('terms')}
+                  type="checkbox"
+                  className="mt-0.5 w-4 h-4 accent-[var(--color-primary)]"
+                />
+                <span className="text-[var(--color-text-muted)]">
+                  Li e aceito os{' '}
+                  <Link to="/termos" className="text-[var(--color-primary)] hover:underline">
+                    termos de revenda
+                  </Link>
+                </span>
               </label>
               {errors.terms && <div className="text-xs text-red-400">{errors.terms.message}</div>}
 
-              <button type="submit" disabled={creating} className="cta-neon w-full flex items-center justify-center gap-2 mt-4">
-                {creating ? <LoaderRing size={20} /> : <span className="relative z-10 flex items-center gap-2">Continuar para pagamento <ArrowRight size={18} /></span>}
-              </button>
+              <Button type="submit" disabled={creating} size="lg" className="w-full mt-2">
+                {creating ? (
+                  <LoaderRing size={16} />
+                ) : (
+                  <>
+                    Continuar para pagamento <ArrowRight size={14} />
+                  </>
+                )}
+              </Button>
             </form>
 
-            <div className="text-center text-sm text-text-muted mt-8">
-              Já é revendedor? <Link to="/login" className="text-primary font-semibold">Entrar</Link>
+            <div className="text-center text-xs text-[var(--color-text-muted)] mt-7 pt-5 border-t border-[var(--color-border)]">
+              Já é revendedor?{' '}
+              <Link to="/login" className="text-[var(--color-primary)] hover:underline font-medium">
+                Entrar
+              </Link>
             </div>
-          </div>
+          </Card>
         )}
 
         {step === 2 && (
-          <div className="holo-card holo-permanent p-8 sm:p-10">
-            <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">Pagamento de acesso</h1>
-            <p className="text-text-muted mb-6 text-sm">Taxa única de ativação da conta</p>
+          <Card className="p-8">
+            <h1 className="text-2xl font-semibold tracking-tight">Pagamento de acesso</h1>
+            <p className="text-sm text-[var(--color-text-muted)] mt-1 mb-6">Taxa única de ativação da conta</p>
 
-            <div className="rounded-xl p-5 mb-6 bg-gradient-to-br from-primary/10 to-accent-cyan/5 border border-primary/20">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-text-muted text-sm">Acesso vitalício ao painel</span>
+            <div className="rounded-md bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20 p-5 mb-6">
+              <div className="text-sm text-[var(--color-text-muted)]">Acesso vitalício ao painel</div>
+              <div className="text-3xl font-semibold tracking-tight text-[var(--color-primary)] mt-1">
+                {formatBRL(990)}
               </div>
-              <div className="text-4xl font-display font-bold text-primary">{formatBRL(990)}</div>
-              <div className="text-xs text-text-muted mt-2">Pagamento único. Sem mensalidade.</div>
+              <div className="text-xs text-[var(--color-text-dim)] mt-2">Pagamento único · Sem mensalidade</div>
             </div>
 
             {!pix && (
-              <button onClick={startPayment} disabled={paying} className="cta-neon w-full flex items-center justify-center gap-2">
-                {paying ? <LoaderRing size={20} /> : <span className="relative z-10 flex items-center gap-2"><QrCode size={18} /> Gerar PIX</span>}
-              </button>
+              <Button onClick={startPayment} disabled={paying} size="lg" className="w-full">
+                {paying ? <LoaderRing size={16} /> : (
+                  <>
+                    <QrCode size={14} /> Gerar PIX
+                  </>
+                )}
+              </Button>
             )}
 
             {pix && (
               <div className="space-y-4">
                 {pix.qr && (
                   <div className="flex justify-center">
-                    <div className="bg-white p-4 rounded-xl">
-                      <img src={`data:image/png;base64,${pix.qr}`} alt="QR Code PIX" className="w-56 h-56" />
+                    <div className="bg-white p-3 rounded-lg">
+                      <img src={`data:image/png;base64,${pix.qr}`} alt="QR PIX" className="w-56 h-56" />
                     </div>
                   </div>
                 )}
                 {pix.text && (
                   <div>
-                    <label className="block text-sm text-text-muted mb-2">PIX Copia e Cola</label>
+                    <div className="text-xs text-[var(--color-text-muted)] mb-1.5">PIX copia-e-cola</div>
                     <div className="flex gap-2">
-                      <input readOnly value={pix.text} className="input-dsl font-mono text-xs" />
-                      <button onClick={handleCopyPix} className="cta-ghost !px-4 shrink-0">
-                        {copied ? <Check size={16} className="text-primary" /> : <Copy size={16} />}
-                      </button>
+                      <input readOnly value={pix.text} className={inputClass + ' font-mono text-xs'} />
+                      <Button onClick={handleCopyPix} variant="secondary" className="shrink-0">
+                        {copied ? <Check size={14} className="text-[var(--color-primary)]" /> : <Copy size={14} />}
+                      </Button>
                     </div>
                   </div>
                 )}
-                <div className="flex items-center justify-center gap-3 text-sm text-text-muted p-4 rounded-xl bg-white/5">
-                  <LoaderRing size={16} />
-                  Aguardando pagamento... (checa a cada 4s)
+                <div className="flex items-center justify-center gap-2 text-sm p-3 rounded-md bg-[var(--color-surface-2)]/60 border border-[var(--color-border)] text-[var(--color-text-muted)]">
+                  <LoaderRing size={14} className="text-[var(--color-primary)]" />
+                  Aguardando pagamento (checa a cada 4s)
                 </div>
               </div>
             )}
-          </div>
+          </Card>
         )}
       </div>
     </div>
@@ -247,9 +314,9 @@ export default function Cadastrar() {
 function Field({ label, icon: Icon, error, children }: { label: string; icon: any; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-text-muted mb-2">{label}</label>
+      <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">{label}</label>
       <div className="relative">
-        <Icon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim z-10" />
+        <Icon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-dim)] z-10" />
         {children}
       </div>
       {error && <div className="text-xs text-red-400 mt-1">{error}</div>}

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import {
-  TrendingUp, Users, DollarSign, Target, ArrowRight, Wallet, ShieldCheck,
-  Sparkles, Copy, Check, Zap, AlertCircle, Loader2,
+  TrendingUp, Users, Target, ArrowRight, Wallet, ShieldCheck,
+  Copy, Check, Zap,
 } from 'lucide-react';
 import { formatBRL, copyToClipboard } from '@/lib/utils';
 import { LoaderRing } from '@/components/LoaderRing';
+import { Badge, Button, ButtonLink, Card, PageHeader, Section, Stat } from '@/components/ui';
 import { toast } from 'sonner';
 
 interface Metrics {
@@ -41,7 +41,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!reseller) { setLoading(false); return; }
+    if (!reseller) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -52,225 +55,211 @@ export default function Dashboard() {
         if (cancelled) return;
         if (m.data?.ok) setMetrics(m.data);
         if (b.data?.ok) setBalance(b.data);
-      } catch { /* ignore */ }
-      finally { if (!cancelled) setLoading(false); }
+      } catch {}
+      finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [reseller, authLoading]);
 
-  if (loading || authLoading) return <div className="min-h-[60vh] grid place-items-center"><LoaderRing /></div>;
-  if (!reseller) return <div className="min-h-[60vh] grid place-items-center"><p className="text-text-muted">Carregando…</p></div>;
+  if (loading || authLoading)
+    return (
+      <div className="min-h-[60vh] grid place-items-center text-[var(--color-text-muted)]">
+        <LoaderRing size={28} />
+      </div>
+    );
+  if (!reseller)
+    return (
+      <div className="min-h-[60vh] grid place-items-center">
+        <p className="text-sm text-[var(--color-text-muted)]">Carregando…</p>
+      </div>
+    );
 
   const saleUrl = reseller.slug ? `https://pay.devsemlimites.site/c/${reseller.slug}` : null;
   const copyLink = async () => {
     if (!saleUrl) return;
     await copyToClipboard(saleUrl);
     setCopied(true);
-    toast.success('Link copiado!');
-    setTimeout(() => setCopied(false), 2000);
+    toast.success('Link copiado');
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const firstName = reseller.name?.split(' ')[0] || 'campeão';
-  const onboardingPending = !reseller.pagarme_recipient_id || (reseller.pagarme_kyc_status !== 'approved');
+  const onboardingPending =
+    !reseller.pagarme_recipient_id || reseller.pagarme_kyc_status !== 'approved';
+
+  const progressPercent = metrics?.next_tier
+    ? Math.min(
+        100,
+        ((metrics.active_customers - 0) / (metrics.active_customers + metrics.next_tier.missing)) * 100,
+      )
+    : 0;
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-6xl">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <div className="flex items-center gap-3 mb-1 flex-wrap">
-          <span className="text-text-muted text-sm">Olá,</span>
-          {metrics && (
-            <span className="text-xs px-2 py-0.5 rounded-full border border-primary/30 text-primary font-semibold uppercase tracking-wider">
-              {metrics.tier.emoji} {TIER_LABEL[metrics.tier.name]} · {metrics.tier.commission_percent}%
-            </span>
-          )}
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-display font-bold flex items-center gap-3">
-          {firstName} 👋
-        </h1>
-      </motion.div>
+    <Section>
+      <PageHeader
+        title={`Olá, ${firstName}`}
+        description={
+          metrics
+            ? `${TIER_LABEL[metrics.tier.name]} · ${metrics.tier.commission_percent}% de comissão`
+            : 'Visão geral da sua operação'
+        }
+        actions={
+          metrics && <Badge tone="success">{TIER_LABEL[metrics.tier.name]}</Badge>
+        }
+      />
 
-      {/* Banner onboarding pendente */}
+      {/* Onboarding banner */}
       {onboardingPending && reseller.entry_paid && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-600/5 p-5"
-        >
-          <div className="flex items-start gap-4">
-            <div className="size-12 rounded-xl bg-amber-500/20 grid place-items-center shrink-0">
-              <ShieldCheck className="size-6 text-amber-300" />
+        <Card className="mb-6 p-5 border-amber-500/30">
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-md bg-amber-500/10 border border-amber-500/20 grid place-items-center shrink-0">
+              <ShieldCheck size={16} className="text-amber-400" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-amber-100">Configure sua conta de recebimento</h3>
-              <p className="text-sm text-amber-200/80 mt-1 mb-3">
-                Pra começar a receber comissões, precisamos cadastrar sua conta no Pagar.me. Leva 3 minutos.
+              <div className="font-medium mb-0.5">Configure sua conta de recebimento</div>
+              <p className="text-sm text-[var(--color-text-muted)] mb-3">
+                Pra começar a receber comissões, precisamos cadastrar sua conta no Pagar.me. Leva 3
+                minutos.
               </p>
-              <Link to="/onboarding-pagarme" className="cta-neon inline-flex items-center gap-2 !py-2 !px-4 text-sm">
-                Configurar agora <ArrowRight size={14} />
+              <Link to="/onboarding-pagarme">
+                <Button size="sm">
+                  Configurar agora <ArrowRight size={13} />
+                </Button>
               </Link>
             </div>
           </div>
-        </motion.div>
+        </Card>
       )}
 
-      {/* Bônus Lendário pendente */}
+      {/* Bonus */}
       {metrics?.lendario_bonus_pending && (
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-          className="mb-6 rounded-2xl p-5 bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-2 border-amber-500/40"
-        >
-          <div className="flex items-center gap-4">
-            <div className="text-4xl">🎁</div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-amber-100">Bônus de R$ 2.000 desbloqueado!</h3>
-              <p className="text-amber-200/80 text-sm">Você é Lendário. Cai na conta nos próximos dias úteis.</p>
+        <Card className="mb-6 p-5 border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-md bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 grid place-items-center shrink-0">
+              <Zap size={16} className="text-[var(--color-primary)]" />
+            </div>
+            <div>
+              <div className="font-medium">Bônus de R$ 2.000 desbloqueado</div>
+              <div className="text-sm text-[var(--color-text-muted)]">
+                Você é Lendário. Cai na conta nos próximos dias úteis.
+              </div>
             </div>
           </div>
-        </motion.div>
+        </Card>
       )}
 
-      {/* Stats principais */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <StatCard
-          icon={Users}
-          iconColor="text-emerald-400"
-          label="Clientes ativos"
-          value={String(metrics?.active_customers || 0)}
-          sublabel="pagando agora"
-        />
-        <StatCard
-          icon={TrendingUp}
-          iconColor="text-emerald-400"
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Stat label="Clientes ativos" value={String(metrics?.active_customers || 0)} icon={Users} />
+        <Stat
           label="MRR (sua parte)"
           value={formatBRL(metrics?.mrr_commission_cents || 0)}
-          sublabel="todo mês"
-          highlight
+          icon={TrendingUp}
         />
-        <StatCard
-          icon={Target}
-          iconColor="text-cyan-400"
-          label="Vendas 30d"
-          value={String(metrics?.total_sales_30d || 0)}
-          sublabel="cobranças confirmadas"
-        />
-        <StatCard
-          icon={Wallet}
-          iconColor="text-amber-400"
-          label="Saldo disponível"
-          value={formatBRL(balance?.available_amount || 0)}
-          sublabel="pra sacar"
-          link="/extrato"
-        />
+        <Stat label="Vendas 30d" value={String(metrics?.total_sales_30d || 0)} icon={Target} />
+        <Stat label="Saldo disponível" value={formatBRL(balance?.available_amount || 0)} icon={Wallet} />
       </div>
 
-      {/* Link de venda destaque */}
+      {/* Sale link */}
       {saleUrl && (
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/30 p-5 sm:p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+        <Card className="p-6 mb-6">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-[260px]">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="size-5 text-emerald-400" />
-                <h3 className="font-display font-bold text-lg">Seu link único de venda</h3>
+              <div className="text-sm font-medium mb-3">Seu link único de venda</div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-10 px-3 rounded-md bg-[var(--color-surface-2)] border border-[var(--color-border)] flex items-center font-mono text-xs text-[var(--color-text-muted)] truncate">
+                  {saleUrl}
+                </div>
+                <Button onClick={copyLink} variant="secondary">
+                  {copied ? (
+                    <>
+                      <Check size={13} className="text-[var(--color-primary)]" /> Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={13} /> Copiar
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="flex items-center gap-2 bg-slate-950/60 rounded-xl p-3 mb-3 border border-emerald-500/20">
-                <code className="flex-1 text-sm font-mono text-emerald-400 break-all">{saleUrl}</code>
-                <button onClick={copyLink} className="cta-ghost !py-2 !px-3 text-xs inline-flex items-center gap-1 shrink-0">
-                  {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                </button>
-              </div>
-              <p className="text-xs text-text-muted">
-                Compartilhe esse link em qualquer lugar. <strong className="text-text-primary">Toda venda gera comissão automática</strong> na sua conta Pagar.me.
+              <p className="text-xs text-[var(--color-text-muted)] mt-3">
+                Compartilhe em qualquer lugar. Toda venda gera comissão automática.
               </p>
             </div>
-            <Link to="/comprar-chaves" className="cta-neon !py-2.5 inline-flex items-center gap-2 text-sm shrink-0">
-              Como divulgar <ArrowRight size={14} />
+            <Link to="/comprar-chaves" className="shrink-0">
+              <Button>
+                Como divulgar <ArrowRight size={14} />
+              </Button>
             </Link>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Próximo tier */}
       {metrics?.next_tier && (
-        <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-5 mb-6">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h3 className="font-display font-semibold flex items-center gap-2">
-              <Zap size={16} className="text-primary" /> Próximo tier
-            </h3>
-            <span className="text-xs text-text-muted">
-              Faltam <strong className="text-primary">{metrics.next_tier.missing}</strong> clientes pra <strong>{metrics.next_tier.emoji} {TIER_LABEL[metrics.next_tier.name]}</strong>
+        <Card className="p-6 mb-6">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+            <div className="text-sm font-medium">Próximo tier</div>
+            <span className="text-xs text-[var(--color-text-muted)]">
+              Faltam <span className="text-[var(--color-text)] font-medium">{metrics.next_tier.missing}</span>{' '}
+              clientes pra {TIER_LABEL[metrics.next_tier.name]}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-white/5 overflow-hidden mb-2">
+          <div className="h-1.5 rounded-full bg-[var(--color-surface-2)] overflow-hidden mb-3">
             <div
-              className="h-full bg-gradient-to-r from-primary to-accent-cyan transition-all"
-              style={{ width: `${Math.min(100, ((metrics.active_customers - 0) / (metrics.active_customers + metrics.next_tier.missing)) * 100)}%` }}
+              className="h-full bg-[var(--color-primary)] rounded-full transition-all"
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <p className="text-xs text-text-dim">
-            Subir pra {TIER_LABEL[metrics.next_tier.name]} dá <strong className="text-primary">+{metrics.next_tier.extra_commission_percent.toFixed(1)}% de comissão</strong> sobre TODOS os seus clientes (não só novos).
+          <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+            Subir pra {TIER_LABEL[metrics.next_tier.name]} dá{' '}
+            <span className="text-[var(--color-primary)] font-medium">
+              +{metrics.next_tier.extra_commission_percent.toFixed(1)}% de comissão
+            </span>{' '}
+            sobre TODOS os seus clientes.
           </p>
-          <Link to="/escala" className="text-xs text-primary mt-3 inline-flex items-center gap-1 hover:gap-2 transition-all">
-            Ver plano de escala completo <ArrowRight size={12} />
+          <Link
+            to="/escala"
+            className="text-xs text-[var(--color-primary)] mt-3 inline-flex items-center gap-1 hover:underline"
+          >
+            Ver plano de escala completo <ArrowRight size={11} />
           </Link>
-        </div>
+        </Card>
       )}
 
-      {/* Quick links */}
+      {/* Quick actions */}
       <div className="grid sm:grid-cols-3 gap-3">
-        <QuickAction
-          to="/comprar-chaves"
-          icon={Sparkles}
-          title="Meus Links"
-          description="Material de divulgação + dicas"
-        />
-        <QuickAction
-          to="/minhas-chaves"
-          icon={Users}
-          title="Meus Clientes"
-          description={`${metrics?.active_customers || 0} ativos`}
-        />
+        <QuickAction to="/comprar-chaves" icon={ArrowRight} title="Meus links" description="Material de divulgação" />
+        <QuickAction to="/minhas-chaves" icon={Users} title="Meus clientes" description={`${metrics?.active_customers || 0} ativos`} />
         <QuickAction
           to="/extrato"
           icon={Wallet}
-          title="Extrato e Saque"
+          title="Extrato e saque"
           description={balance?.available_amount ? `${formatBRL(balance.available_amount)} disponível` : 'Sem saldo ainda'}
         />
       </div>
-    </div>
+    </Section>
   );
-}
-
-function StatCard({ icon: Icon, iconColor, label, value, sublabel, link, highlight = false }: {
-  icon: any; iconColor: string; label: string; value: string; sublabel?: string; link?: string; highlight?: boolean;
-}) {
-  const content = (
-    <div className={`rounded-2xl p-4 transition-all ${
-      highlight ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-white/5 border border-white/5'
-    } ${link ? 'hover:border-primary/30 cursor-pointer' : ''}`}>
-      <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
-        <Icon size={14} className={iconColor} />
-        <span className="uppercase tracking-wider font-medium">{label}</span>
-      </div>
-      <div className={`text-2xl font-bold ${highlight ? 'text-emerald-400' : 'text-text-primary'}`}>
-        {value}
-      </div>
-      {sublabel && <div className="text-[11px] text-text-dim mt-1">{sublabel}</div>}
-    </div>
-  );
-  return link ? <Link to={link}>{content}</Link> : content;
 }
 
 function QuickAction({ to, icon: Icon, title, description }: { to: string; icon: any; title: string; description: string }) {
   return (
-    <Link to={to} className="holo-card p-4 hover:border-primary/30 transition-all flex items-center gap-3 group">
-      <div className="size-10 rounded-xl bg-primary/10 grid place-items-center shrink-0">
-        <Icon size={18} className="text-primary" />
+    <Link
+      to={to}
+      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 hover:bg-[var(--color-surface-2)] transition-colors flex items-center gap-3 group"
+    >
+      <div className="size-9 rounded-md bg-[var(--color-surface-2)] border border-[var(--color-border)] grid place-items-center shrink-0">
+        <Icon size={15} className="text-[var(--color-primary)]" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm">{title}</div>
-        <div className="text-xs text-text-muted truncate">{description}</div>
+        <div className="text-sm font-medium">{title}</div>
+        <div className="text-xs text-[var(--color-text-dim)] truncate">{description}</div>
       </div>
-      <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors shrink-0" />
+      <ArrowRight size={13} className="text-[var(--color-text-dim)] group-hover:text-[var(--color-text)] shrink-0" />
     </Link>
   );
 }

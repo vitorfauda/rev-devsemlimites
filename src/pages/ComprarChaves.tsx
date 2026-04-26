@@ -1,21 +1,12 @@
-// ============================================================
-// "Meus Links" — link de venda + dicas de divulgação
-// ============================================================
-// Conceito novo: revenda recebe por COMISSÃO, não compra mais chaves.
-// (Arquivo mantém nome ComprarChaves.tsx pra rota legacy /comprar-chaves)
-// ============================================================
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  Link as LinkIcon, Copy, Check, MessageCircle, Send,
-  ArrowRight, Sparkles, Image as ImageIcon, FileText,
-  ShieldCheck, Lightbulb, TrendingUp,
+  Copy, Check, MessageCircle, Send, ArrowRight, Lightbulb, ShieldCheck, FileText, Image as ImageIcon, TrendingUp,
 } from 'lucide-react';
 import { copyToClipboard } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Badge, Button, ButtonLink, Card, PageHeader, Section } from '@/components/ui';
 
 const TIER_LABEL: Record<string, string> = {
   bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', diamante: 'Diamante', lendario: 'Lendário',
@@ -24,6 +15,7 @@ const TIER_LABEL: Record<string, string> = {
 export default function MeusLinks() {
   const { reseller } = useAuth();
   const [copied, setCopied] = useState<string | null>(null);
+  const [tone, setTone] = useState<'amigavel' | 'direta' | 'agressiva'>('direta');
 
   if (!reseller) return null;
 
@@ -33,182 +25,197 @@ export default function MeusLinks() {
   const copy = async (text: string, key: string) => {
     await copyToClipboard(text);
     setCopied(key);
-    toast.success('Copiado!');
-    setTimeout(() => setCopied(null), 2000);
+    toast.success('Copiado');
+    setTimeout(() => setCopied(null), 1500);
   };
 
-  const messages = [
-    {
-      id: 'amigavel',
-      label: 'Amigável (WhatsApp/grupos)',
-      text: `Conheci uma extensão que diminui drasticamente o consumo de créditos do Lovable. Estou usando há um tempo e nunca mais tive problema de "out of credits". Quem usa Lovable e quer testar, dá uma olhada aqui:\n\n${saleUrl}`,
-    },
-    {
-      id: 'direta',
-      label: 'Direta (X/Twitter/grupos)',
-      text: `Cansado de ficar sem crédito no Lovable no meio do projeto? Tem uma extensão que dá prompts ilimitados por R$ 97/mês. Já testei. Funciona.\n\n${saleUrl}`,
-    },
-    {
-      id: 'agressiva',
-      label: 'Agressiva (TikTok/Reels)',
-      text: `Gente, eu PAREI de pagar R$ 250 de crédito por semana no Lovable. Descobri uma extensão que dá prompts ILIMITADOS por R$ 97 fixos no mês. Mostro como funciona AQUI 👇\n\n${saleUrl}`,
-    },
-  ];
+  const messages = {
+    amigavel: `Conheci uma extensão que diminui drasticamente o consumo de créditos do Lovable. Estou usando há um tempo e nunca mais tive problema de "out of credits". Quem usa Lovable e quer testar:\n\n${saleUrl}`,
+    direta: `Cansado de ficar sem crédito no Lovable no meio do projeto? Tem uma extensão que dá prompts ilimitados por R$ 97/mês. Já testei. Funciona.\n\n${saleUrl}`,
+    agressiva: `Parei de pagar R$ 250 de crédito por semana no Lovable. Descobri uma extensão que dá prompts ILIMITADOS por R$ 97 fixos no mês. Mostro como funciona aqui:\n\n${saleUrl}`,
+  };
 
+  const encodedMsg = encodeURIComponent(`Conheci uma extensão que dá prompts ilimitados no Lovable: ${saleUrl}`);
   const encodedUrl = encodeURIComponent(saleUrl || '');
-  const encodedMsg = encodeURIComponent(`Conheci uma extensão que dá prompts ilimitados no Lovable. Vale conferir: ${saleUrl}`);
   const shareLinks = [
-    { name: 'WhatsApp', url: `https://wa.me/?text=${encodedMsg}`, icon: MessageCircle, color: 'text-emerald-400' },
-    { name: 'Twitter/X', url: `https://twitter.com/intent/tweet?text=${encodedMsg}`, icon: Send, color: 'text-blue-400' },
-    { name: 'Telegram', url: `https://t.me/share/url?url=${encodedUrl}&text=${encodedMsg}`, icon: Send, color: 'text-cyan-400' },
+    { name: 'WhatsApp', url: `https://wa.me/?text=${encodedMsg}`, icon: MessageCircle },
+    { name: 'Twitter/X', url: `https://twitter.com/intent/tweet?text=${encodedMsg}`, icon: Send },
+    { name: 'Telegram', url: `https://t.me/share/url?url=${encodedUrl}&text=${encodedMsg}`, icon: Send },
   ];
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-8 max-w-5xl">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-display font-bold mb-2 flex items-center gap-3">
-          <LinkIcon className="size-7 text-primary" /> Meus Links
-        </h1>
-        <p className="text-text-muted mb-6">
-          Toda venda que entrar pelo seu link gera comissão automática direto na sua conta Pagar.me.
-        </p>
+    <Section>
+      <PageHeader
+        title="Meus links"
+        description="Toda venda pelo seu link gera comissão automática direto na sua Pagar.me"
+      />
 
-        {onboardingPending && (
-          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 flex items-start gap-4">
-            <ShieldCheck className="size-6 text-amber-300 mt-0.5 shrink-0" />
+      {onboardingPending && (
+        <Card className="mb-6 p-5 border-amber-500/30">
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-md bg-amber-500/10 border border-amber-500/20 grid place-items-center shrink-0">
+              <ShieldCheck size={16} className="text-amber-400" />
+            </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-amber-100">Configure sua conta de recebimento primeiro</h3>
-              <p className="text-sm text-amber-200/80 mt-1 mb-3">
+              <div className="font-medium mb-0.5">Configure seu recebimento primeiro</div>
+              <p className="text-sm text-[var(--color-text-muted)] mb-3">
                 Pra liberar seu link e começar a receber comissões, complete o onboarding Pagar.me.
               </p>
-              <Link to="/onboarding-pagarme" className="cta-neon inline-flex items-center gap-2 !py-2 !px-4 text-sm">
-                Configurar agora <ArrowRight size={14} />
+              <Link to="/onboarding-pagarme">
+                <Button size="sm">
+                  Configurar agora <ArrowRight size={13} />
+                </Button>
               </Link>
             </div>
           </div>
-        )}
+        </Card>
+      )}
 
-        {saleUrl && !onboardingPending && (
-          <div className="rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-2 border-emerald-500/30 p-5 sm:p-6 mb-6">
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <Sparkles className="size-5 text-emerald-400" />
-              <h2 className="font-display font-bold text-lg">Seu link único</h2>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-semibold uppercase tracking-wider">
-                Comissão {reseller.commission_percent ?? 60}%
-              </span>
-            </div>
-            <div className="flex items-center gap-2 bg-slate-950/60 rounded-xl p-3 mb-4 border border-emerald-500/20">
-              <code className="flex-1 text-sm sm:text-base font-mono text-emerald-400 break-all">{saleUrl}</code>
-              <button
-                onClick={() => copy(saleUrl, 'main')}
-                className="cta-neon !py-2 !px-4 text-sm inline-flex items-center gap-2 shrink-0"
-              >
-                {copied === 'main' ? <Check size={14} /> : <Copy size={14} />}
-                {copied === 'main' ? 'Copiado!' : 'Copiar'}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {shareLinks.map(s => (
-                <a key={s.name} href={s.url} target="_blank" rel="noreferrer" className="cta-ghost !py-2 !px-3 text-sm inline-flex items-center gap-2">
-                  <s.icon size={14} className={s.color} /> Compartilhar no {s.name}
-                </a>
-              ))}
-            </div>
+      {saleUrl && !onboardingPending && (
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Badge tone="success">Comissão {reseller.commission_percent ?? 60}%</Badge>
+            <span className="text-xs text-[var(--color-text-dim)]">Slug verificado</span>
           </div>
-        )}
 
-        <div className="grid md:grid-cols-3 gap-3 mb-6">
-          <Step num={1} title="Compartilhe" description="Posta o link em qualquer canal: WhatsApp, IG, TikTok, grupos, comunidades" />
-          <Step num={2} title="Cliente compra" description="Sem você precisar fazer nada — checkout cuida de tudo" />
-          <Step num={3} title="Você recebe" description="Comissão cai automática no seu Pagar.me. Saca quando quiser." />
-        </div>
+          <div className="text-xs text-[var(--color-text-muted)] mb-2">Seu link único</div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-12 px-4 rounded-md bg-[var(--color-surface-2)] border border-[var(--color-border)] flex items-center font-mono text-sm">
+              {saleUrl}
+            </div>
+            <Button onClick={() => copy(saleUrl, 'main')} variant="secondary">
+              {copied === 'main' ? (
+                <>
+                  <Check size={14} className="text-[var(--color-primary)]" /> Copiado
+                </>
+              ) : (
+                <>
+                  <Copy size={14} /> Copiar
+                </>
+              )}
+            </Button>
+          </div>
 
-        <div className="holo-card p-5 mb-6">
-          <h2 className="font-display font-bold text-lg mb-2 flex items-center gap-2">
-            <FileText size={18} className="text-primary" /> Mensagens prontas pra divulgar
-          </h2>
-          <p className="text-sm text-text-muted mb-4">Copia, cola e ajusta do seu jeito. Já vem com seu link.</p>
-          <div className="space-y-3">
-            {messages.map(m => (
-              <div key={m.id} className="bg-white/5 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">{m.label}</span>
-                  <button onClick={() => copy(m.text, m.id)} className="cta-ghost !py-1.5 !px-3 text-xs inline-flex items-center gap-1">
-                    {copied === m.id ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                    {copied === m.id ? 'Copiado' : 'Copiar'}
-                  </button>
-                </div>
-                <p className="text-sm text-text-primary whitespace-pre-line">{m.text}</p>
-              </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {shareLinks.map((s) => (
+              <ButtonLink key={s.name} href={s.url} target="_blank" rel="noreferrer" variant="secondary" size="sm">
+                <s.icon size={13} /> {s.name}
+              </ButtonLink>
             ))}
           </div>
+        </Card>
+      )}
+
+      {/* Steps */}
+      <div className="grid sm:grid-cols-3 gap-3 mb-6">
+        {[
+          { n: '01', t: 'Compartilhe', d: 'Posta o link em qualquer canal: WhatsApp, IG, TikTok, grupos.' },
+          { n: '02', t: 'Cliente compra', d: 'Sem você precisar fazer nada. Checkout cuida de tudo.' },
+          { n: '03', t: 'Você recebe', d: 'Comissão cai automática no seu Pagar.me. Saca quando quiser.' },
+        ].map((s) => (
+          <Card key={s.n} className="p-5">
+            <div className="text-xs text-[var(--color-text-dim)] font-mono mb-2">{s.n}</div>
+            <div className="text-sm font-medium mb-1">{s.t}</div>
+            <div className="text-xs text-[var(--color-text-muted)] leading-relaxed">{s.d}</div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Mensagens prontas */}
+      <Card className="p-6 mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <FileText size={14} className="text-[var(--color-primary)]" />
+          <div className="text-sm font-medium">Mensagens prontas</div>
+        </div>
+        <div className="text-xs text-[var(--color-text-muted)] mb-4">
+          Escolha o tom, copie e ajuste do seu jeito
         </div>
 
-        <div className="holo-card p-5 mb-6">
-          <h2 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
-            <Lightbulb size={18} className="text-primary" /> Onde divulgar pra fechar mais
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Tip emoji="💬" title="Grupos WhatsApp / Discord" desc="Comunidades de devs, no-code, IA, indie hackers" />
-            <Tip emoji="🎥" title="TikTok / Reels" desc='Mostra antes/depois: "eu pagava R$ 250/sem, agora R$ 97/mês"' />
-            <Tip emoji="🐦" title="X / Twitter" desc='Tweet com print de "out of credits": "isso não acontece mais comigo"' />
-            <Tip emoji="📺" title="YouTube / Live" desc='"Como criar projetos no Lovable sem se preocupar com créditos"' />
-            <Tip emoji="📰" title="Newsletter / blog" desc="Reviews honestas pesam muito. Compartilha tua experiência" />
-            <Tip emoji="🧑‍💼" title="LinkedIn" desc='"Reduzi meu custo Lovable em 90% com essa stack"' />
-          </div>
+        <div className="flex gap-1 mb-4">
+          {(['amigavel', 'direta', 'agressiva'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTone(t)}
+              className={
+                'px-3 py-1.5 rounded-md text-xs capitalize ' +
+                (tone === t
+                  ? 'bg-[var(--color-surface-2)] text-[var(--color-text)] border border-[var(--color-border)]'
+                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]')
+              }
+            >
+              {t}
+            </button>
+          ))}
         </div>
 
-        <div className="holo-card p-5 mb-6">
-          <h2 className="font-display font-bold text-lg mb-2 flex items-center gap-2">
-            <ImageIcon size={18} className="text-primary" /> Material de apoio
-          </h2>
-          <p className="text-sm text-text-muted mb-3">
-            Banners, logos e vídeos prontos pra postar. <span className="text-amber-400">Em construção</span> — em breve.
-          </p>
-          <Link to="/materiais" className="text-sm text-primary hover:gap-2 inline-flex items-center gap-1 transition-all">
-            Ver materiais <ArrowRight size={14} />
-          </Link>
+        <div className="rounded-md bg-[var(--color-surface-2)]/60 border border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)] whitespace-pre-line leading-relaxed">
+          {messages[tone]}
         </div>
 
-        <Link to="/escala" className="block holo-card p-5 hover:border-primary/30 transition-all">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-xl bg-primary/10 grid place-items-center">
-              <TrendingUp className="size-6 text-primary" />
+        <Button onClick={() => copy(messages[tone], tone)} variant="secondary" size="sm" className="mt-4">
+          {copied === tone ? <Check size={13} className="text-[var(--color-primary)]" /> : <Copy size={13} />}
+          {copied === tone ? 'Copiado' : 'Copiar texto'}
+        </Button>
+      </Card>
+
+      {/* Onde divulgar */}
+      <Card className="p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Lightbulb size={14} className="text-[var(--color-primary)]" />
+          <div className="text-sm font-medium">Onde divulgar pra fechar mais</div>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {[
+            ['Grupos WhatsApp / Discord', 'Comunidades de devs, no-code, IA, indie hackers'],
+            ['TikTok / Reels', '"Eu pagava R$ 250/sem, agora R$ 97/mês"'],
+            ['X / Twitter', 'Tweet com print de "out of credits": "isso não acontece mais"'],
+            ['YouTube / Live', '"Como criar projetos no Lovable sem se preocupar com créditos"'],
+            ['Newsletter / blog', 'Reviews honestas pesam muito. Compartilha tua experiência'],
+            ['LinkedIn', '"Reduzi meu custo Lovable em 90% com essa stack"'],
+          ].map(([t, d], i) => (
+            <div
+              key={i}
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)]/40 p-3"
+            >
+              <div className="text-sm font-medium">{t}</div>
+              <div className="text-xs text-[var(--color-text-muted)] mt-1 leading-relaxed">{d}</div>
             </div>
-            <div className="flex-1">
-              <div className="font-semibold">Plano de Escala — quanto você pode ganhar</div>
-              <div className="text-xs text-text-muted">
-                Tier atual: {TIER_LABEL[reseller.tier || 'bronze']} · Veja projeção, ranking e calculadora de meta
+          ))}
+        </div>
+      </Card>
+
+      {/* Materiais */}
+      <Card className="p-6 mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <ImageIcon size={14} className="text-[var(--color-primary)]" />
+          <div className="text-sm font-medium">Material de apoio</div>
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] mb-3">
+          Banners, logos e vídeos prontos pra postar.{' '}
+          <Badge tone="warning">Em construção</Badge>
+        </p>
+        <Link to="/materiais" className="text-sm text-[var(--color-primary)] hover:underline inline-flex items-center gap-1">
+          Ver materiais <ArrowRight size={13} />
+        </Link>
+      </Card>
+
+      {/* Ver escala */}
+      <Link to="/escala">
+        <Card className="p-5 hover:bg-[var(--color-surface-2)]/40 transition-colors">
+          <div className="flex items-center gap-4">
+            <div className="size-9 rounded-md bg-[var(--color-surface-2)] border border-[var(--color-border)] grid place-items-center shrink-0">
+              <TrendingUp size={15} className="text-[var(--color-primary)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium">Plano de escala — quanto você pode ganhar</div>
+              <div className="text-xs text-[var(--color-text-dim)] truncate">
+                Tier atual {TIER_LABEL[reseller.tier || 'bronze']} · Veja projeção e calculadora
               </div>
             </div>
-            <ArrowRight size={18} className="text-text-muted" />
+            <ArrowRight size={14} className="text-[var(--color-text-dim)] shrink-0" />
           </div>
-        </Link>
-      </motion.div>
-    </div>
-  );
-}
-
-function Step({ num, title, description }: { num: number; title: string; description: string }) {
-  return (
-    <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
-      <div className="size-8 rounded-full bg-primary/15 text-primary font-bold grid place-items-center mb-3 text-sm">{num}</div>
-      <div className="font-semibold mb-1">{title}</div>
-      <div className="text-xs text-text-muted">{description}</div>
-    </div>
-  );
-}
-
-function Tip({ emoji, title, desc }: { emoji: string; title: string; desc: string }) {
-  return (
-    <div className="bg-white/5 rounded-xl p-3">
-      <div className="flex items-start gap-2">
-        <span className="text-xl shrink-0">{emoji}</span>
-        <div>
-          <div className="font-semibold text-sm">{title}</div>
-          <div className="text-xs text-text-muted mt-0.5">{desc}</div>
-        </div>
-      </div>
-    </div>
+        </Card>
+      </Link>
+    </Section>
   );
 }
