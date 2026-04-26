@@ -110,26 +110,32 @@ export default function Loja() {
       if (error) throw new Error(error.message);
       if (!data?.ok) throw new Error(data?.error || 'Falha ao gerar PIX');
 
+      const paymentId = String(data.payment_id || data.id);
+      const purchaseId = data.purchase_id ? String(data.purchase_id) : null;
+
       setPix({
-        payment_id: String(data.payment_id || data.id),
-        purchase_id: String(data.purchase_id || ''),
+        payment_id: paymentId,
+        purchase_id: purchaseId || '',
         qr: data.qr_code_base64,
         text: data.qr_code_text,
         expires: data.expires_at,
         amount: totalCents,
       });
 
-      const purchaseId = data.purchase_id;
+      // Polling — usa payment_id como chave principal (mais confiável)
       const id = window.setInterval(async () => {
-        const { data: p } = await supabase
-          .from('reseller_purchases')
-          .select('payment_status')
-          .eq('id', purchaseId)
-          .single();
-        if (p?.payment_status === 'paid') {
+        let query = supabase.from('reseller_purchases').select('payment_status').limit(1);
+        query = purchaseId ? query.eq('id', purchaseId) : query.eq('payment_id', paymentId);
+        const { data: rows } = await query;
+        const status = rows?.[0]?.payment_status;
+        if (status === 'paid') {
           clearInterval(id);
           setPaid(true);
           toast.success('Pagamento confirmado!');
+        } else if (status === 'cancelled' || status === 'failed') {
+          clearInterval(id);
+          toast.error('Pagamento não foi concluído. Tenta de novo.');
+          reset();
         }
       }, 4000);
       setPollId(id);
