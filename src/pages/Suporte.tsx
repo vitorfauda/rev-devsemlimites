@@ -49,7 +49,7 @@ export default function Suporte() {
             <p className="text-sm text-text-muted">Troca de experiências, dicas de vendas e novidades em primeira mão</p>
           </div>
           <a
-            href="https://chat.whatsapp.com/ESIcwmqyYur4KcrbzGtA2k"
+            href="https://chat.whatsapp.com/JxfO7n9OCXe8EY4LIaLh9H?mode=gi_t"
             target="_blank" rel="noreferrer"
             className="cta-ghost text-sm"
           >
