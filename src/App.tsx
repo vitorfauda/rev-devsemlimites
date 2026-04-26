@@ -5,7 +5,6 @@ import { AuthProvider } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Landing from '@/pages/Landing';
-import ComoFunciona from '@/pages/ComoFunciona';
 import Login from '@/pages/Login';
 import Cadastrar from '@/pages/Cadastrar';
 import Dashboard from '@/pages/Dashboard';
@@ -21,6 +20,8 @@ import Extrato from '@/pages/Extrato';
 import Escala from '@/pages/Escala';
 import Configuracoes from '@/pages/Configuracoes';
 import SejaRevenda from '@/pages/SejaRevenda';
+import Termos from '@/pages/Termos';
+import Privacidade from '@/pages/Privacidade';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 30000 } },
@@ -45,8 +46,9 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<SejaRevenda />} />
-              <Route path="/como-funciona" element={<ComoFunciona />} />
               <Route path="/seja-revenda" element={<SejaRevenda />} />
+              <Route path="/termos" element={<Termos />} />
+              <Route path="/privacidade" element={<Privacidade />} />
               <Route path="/landing-antiga" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cadastrar" element={<Cadastrar />} />

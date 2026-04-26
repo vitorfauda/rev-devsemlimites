@@ -77,8 +77,8 @@ export function Sidebar() {
       {/* Logo */}
       <Link to="/dashboard" className="h-16 flex items-center gap-3 px-6 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="relative">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-accent-cyan flex items-center justify-center shadow-lg shadow-primary/50">
-            <span className="text-void font-black text-sm">D</span>
+          <div className="h-9 w-9 rounded-xl overflow-hidden shadow-lg shadow-primary/50">
+            <img src="/logo.png" alt="DSL" className="h-full w-full object-contain" />
           </div>
           <div className="absolute inset-0 rounded-xl bg-primary/40 blur-md -z-10" />
         </div>

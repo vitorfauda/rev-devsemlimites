@@ -8,8 +8,8 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-10">
           <div>
             <div className="flex items-center gap-2 font-display font-bold text-lg mb-3">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent-cyan flex items-center justify-center">
-                <span className="text-void font-black text-sm">D</span>
+              <div className="h-8 w-8 rounded-lg overflow-hidden">
+                <img src="/logo.png" alt="DSL" className="h-full w-full object-contain" />
               </div>
               Dev Sem Limites
             </div>

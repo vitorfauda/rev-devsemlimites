@@ -6,7 +6,7 @@ import { BottomNav } from './BottomNav';
 import { useAuth } from '@/hooks/useAuth';
 
 // Rotas que SEMPRE mostram Header público (mesmo logado)
-const PUBLIC_ROUTES = ['/', '/como-funciona', '/login', '/cadastrar', '/seja-revenda'];
+const PUBLIC_ROUTES = ['/', '/login', '/cadastrar', '/seja-revenda', '/termos', '/privacidade'];
 
 export function Layout() {
   const { session } = useAuth();
