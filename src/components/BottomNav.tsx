@@ -3,19 +3,25 @@ import { useState } from 'react';
 import {
   LayoutDashboard, TrendingUp, Link as LinkIcon, Wallet, Menu, X,
   Users, Send, Image, HelpCircle, Shield, User, LogOut, Settings,
+  GraduationCap, Wrench, ShoppingCart, Package, Lock,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
+type MoreItem = { to: string; label: string; icon: any; disabled?: boolean };
+
 const primary = [
   { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
-  { to: '/escala', label: 'Escala', icon: TrendingUp },
-  { to: '/comprar-chaves', label: 'Links', icon: LinkIcon },
-  { to: '/extrato', label: 'Extrato', icon: Wallet },
+  { to: '/loja', label: 'Loja', icon: ShoppingCart },
+  { to: '/estoque', label: 'Estoque', icon: Package },
+  { to: '/cursos', label: 'Cursos', icon: GraduationCap },
 ];
 
-const moreLinks = [
-  { to: '/minhas-chaves', label: 'Meus clientes', icon: Users },
+const baseMoreLinks: MoreItem[] = [
   { to: '/enviar-teste', label: 'Enviar teste', icon: Send },
+  { to: '/escala', label: 'Plano de escala', icon: TrendingUp, disabled: true },
+  { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon, disabled: true },
+  { to: '/minhas-chaves', label: 'Meus clientes', icon: Users, disabled: true },
+  { to: '/extrato', label: 'Extrato Pagar.me', icon: Wallet, disabled: true },
   { to: '/materiais', label: 'Materiais', icon: Image },
   { to: '/suporte', label: 'Suporte', icon: HelpCircle },
   { to: '/configuracoes', label: 'Configurações', icon: Settings },
@@ -23,10 +29,15 @@ const moreLinks = [
   { to: '/perfil', label: 'Perfil', icon: User },
 ];
 
+const adminMoreLinks: MoreItem[] = [
+  { to: '/admin/cursos', label: 'Gerenciar cursos', icon: Wrench },
+];
+
 export function BottomNav() {
   const [open, setOpen] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const nav = useNavigate();
+  const moreLinks = isAdmin ? [...baseMoreLinks, ...adminMoreLinks] : baseMoreLinks;
 
   const handleSignOut = async () => {
     await signOut();
@@ -65,21 +76,34 @@ export function BottomNav() {
         <div className="md:hidden fixed inset-0 z-50 flex flex-col bg-[var(--color-bg)]/95 backdrop-blur">
           <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
             <span className="text-sm font-medium">Mais opções</span>
-            <button onClick={() => setOpen(false)} className="p-1.5 rounded-md hover:bg-white/5 text-[var(--color-text-muted)]">
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1.5 rounded-md hover:bg-white/5 text-[var(--color-text-muted)]"
+            >
               <X size={18} />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
-            {moreLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
-              >
-                <l.icon size={15} /> {l.label}
-              </Link>
-            ))}
+            {moreLinks.map((l) =>
+              l.disabled ? (
+                <div
+                  key={l.to}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-[var(--color-text-dim)] opacity-50 select-none"
+                >
+                  <l.icon size={15} /> <span className="flex-1">{l.label}</span>
+                  <Lock size={11} />
+                </div>
+              ) : (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
+                >
+                  <l.icon size={15} /> {l.label}
+                </Link>
+              ),
+            )}
             <button
               onClick={handleSignOut}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-red-400 hover:bg-red-500/10 mt-3"

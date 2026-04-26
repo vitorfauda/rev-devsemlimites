@@ -84,3 +84,48 @@ export type License = {
   activated_at?: string;
   created_at: string;
 };
+
+// ===== Cursos =====
+export type Course = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  sort_order: number;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CourseModule = {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+};
+
+export type CourseLesson = {
+  id: string;
+  module_id: string;
+  title: string;
+  description: string | null;
+  video_path: string | null;
+  duration_seconds: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CourseProgress = {
+  reseller_id: string;
+  lesson_id: string;
+  completed_at: string | null;
+  last_position_seconds: number;
+  updated_at: string;
+};
+
+export const COURSE_VIDEOS_BUCKET = 'course-videos';
+export const COURSE_THUMBS_BUCKET = 'course-thumbnails';

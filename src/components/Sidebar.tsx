@@ -1,25 +1,42 @@
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, TrendingUp, Link as LinkIcon, Users, Wallet, Send,
-  Image, HelpCircle, Shield, User, LogOut, Settings,
+  LayoutDashboard, TrendingUp, Link as LinkIcon, Users, Wallet, Send, ShoppingCart, Package,
+  Image, HelpCircle, Shield, User, LogOut, Settings, GraduationCap, Wrench, Lock,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-const groups = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: any;
+  /** Quando true, item aparece em cinza, não-clicável, com badge "em manutenção" */
+  disabled?: boolean;
+};
+type NavGroup = { label: string; items: NavItem[] };
+
+const baseGroups: NavGroup[] = [
   { label: 'Visão geral', items: [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] },
   {
-    label: 'Vendas',
+    label: 'Revenda',
     items: [
-      { to: '/escala', label: 'Plano de escala', icon: TrendingUp },
-      { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon },
-      { to: '/minhas-chaves', label: 'Meus clientes', icon: Users },
+      { to: '/loja', label: 'Comprar licenças', icon: ShoppingCart },
+      { to: '/estoque', label: 'Meu estoque', icon: Package },
       { to: '/enviar-teste', label: 'Enviar teste', icon: Send },
     ],
   },
-  { label: 'Financeiro', items: [{ to: '/extrato', label: 'Extrato', icon: Wallet }] },
+  {
+    label: 'Comissão (em breve)',
+    items: [
+      { to: '/escala', label: 'Plano de escala', icon: TrendingUp, disabled: true },
+      { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon, disabled: true },
+      { to: '/minhas-chaves', label: 'Meus clientes', icon: Users, disabled: true },
+      { to: '/extrato', label: 'Extrato Pagar.me', icon: Wallet, disabled: true },
+    ],
+  },
   {
     label: 'Recursos',
     items: [
+      { to: '/cursos', label: 'Cursos', icon: GraduationCap },
       { to: '/materiais', label: 'Materiais', icon: Image },
       { to: '/suporte', label: 'Suporte', icon: HelpCircle },
     ],
@@ -34,9 +51,15 @@ const groups = [
   },
 ];
 
+const adminGroup: NavGroup = {
+  label: 'Admin',
+  items: [{ to: '/admin/cursos', label: 'Gerenciar cursos', icon: Wrench }],
+};
+
 export function Sidebar() {
-  const { signOut, session, reseller } = useAuth();
+  const { signOut, session, reseller, isAdmin } = useAuth();
   const nav = useNavigate();
+  const groups = isAdmin ? [...baseGroups, adminGroup] : baseGroups;
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,10 +68,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] z-40">
-      <Link
-        to="/dashboard"
-        className="h-14 flex items-center gap-2.5 px-4 border-b border-[var(--color-border)]"
-      >
+      <Link to="/dashboard" className="h-14 flex items-center gap-2.5 px-4 border-b border-[var(--color-border)]">
         <div className="h-7 w-7 rounded-md overflow-hidden">
           <img src="/logo.png" alt="DSL" className="h-full w-full object-contain" />
         </div>
@@ -65,25 +85,37 @@ export function Sidebar() {
               {g.label}
             </div>
             <div className="space-y-0.5">
-              {g.items.map((it) => (
-                <NavLink
-                  key={it.to}
-                  to={it.to}
-                  className={({ isActive }) =>
-                    'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-all ' +
-                    (isActive
-                      ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
-                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]/50')
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <it.icon size={15} className={isActive ? 'text-[var(--color-primary)]' : ''} />
-                      <span className="truncate">{it.label}</span>
-                    </>
-                  )}
-                </NavLink>
-              ))}
+              {g.items.map((it) =>
+                it.disabled ? (
+                  <div
+                    key={it.to}
+                    title="Em manutenção — voltará em breve"
+                    className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm text-[var(--color-text-dim)] opacity-50 cursor-not-allowed select-none"
+                  >
+                    <it.icon size={15} />
+                    <span className="truncate flex-1">{it.label}</span>
+                    <Lock size={11} />
+                  </div>
+                ) : (
+                  <NavLink
+                    key={it.to}
+                    to={it.to}
+                    className={({ isActive }) =>
+                      'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-all ' +
+                      (isActive
+                        ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]/50')
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <it.icon size={15} className={isActive ? 'text-[var(--color-primary)]' : ''} />
+                        <span className="truncate">{it.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ),
+              )}
             </div>
           </div>
         ))}
