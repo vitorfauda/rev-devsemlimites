@@ -178,7 +178,7 @@ export default function Escala() {
           <div className="flex items-center gap-3">
             <Gift size={18} className="text-[var(--color-primary)] shrink-0" />
             <div>
-              <div className="font-medium">Bônus de R$ 2.000 desbloqueado</div>
+              <div className="font-medium">Bônus de R$ 1.000 desbloqueado</div>
               <div className="text-sm text-[var(--color-text-muted)]">
                 Você atingiu 100+ clientes ativos. Transferimos nos próximos dias úteis.
               </div>
@@ -224,7 +224,7 @@ export default function Escala() {
                     {TIER_LABEL[tier.name]}
                   </span>
                   {isCurrent && <Badge tone="success">Você está aqui</Badge>}
-                  {tier.name === 'lendario' && <Badge tone="info">+R$ 2.000 bônus</Badge>}
+                  {tier.name === 'lendario' && <Badge tone="info">+R$ 1.000 bônus</Badge>}
                 </div>
                 <div className="text-xs text-[var(--color-text-muted)] mt-0.5">
                   {tier.min}
