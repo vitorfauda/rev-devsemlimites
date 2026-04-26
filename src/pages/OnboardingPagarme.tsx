@@ -78,15 +78,34 @@ const stepBankSchema = z.object({
 });
 type StepBankForm = z.infer<typeof stepBankSchema>;
 
+// Persistência em localStorage — não perde dados em refresh
+const DRAFT_KEY = 'onboarding-draft';
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+function saveDraft(data: any) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch {}
+}
+
 export default function OnboardingPagarme() {
   const nav = useNavigate();
   const { reseller, refreshReseller } = useAuth();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const draft = loadDraft();
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(draft?.step || 1);
   const [submitting, setSubmitting] = useState(false);
 
-  const [identityData, setIdentityData] = useState<StepIdentityForm | null>(null);
-  const [addressData, setAddressData] = useState<StepAddressForm | null>(null);
-  const [bankData, setBankData] = useState<StepBankForm | null>(null);
+  const [identityData, setIdentityData] = useState<StepIdentityForm | null>(draft?.identity || null);
+  const [addressData, setAddressData] = useState<StepAddressForm | null>(draft?.address || null);
+  const [bankData, setBankData] = useState<StepBankForm | null>(draft?.bank || null);
+
+  // Salva rascunho quando muda step ou dados
+  useEffect(() => {
+    saveDraft({ step, identity: identityData, address: addressData, bank: bankData });
+  }, [step, identityData, addressData, bankData]);
   const [createResult, setCreateResult] = useState<null | {
     recipient_id: string;
     status: string;
@@ -118,22 +137,75 @@ export default function OnboardingPagarme() {
     if (!identityData || !addressData || !bankData) return;
     setSubmitting(true);
     try {
-      const phoneClean = (reseller.whatsapp || '').replace(/\D/g, '');
+      // ═══ Phone: extrai DDD+número descartando o country code 55 (E.164) ═══
+      let phoneClean = (reseller.whatsapp || '').replace(/\D/g, '');
+      if (phoneClean.startsWith('55') && (phoneClean.length === 12 || phoneClean.length === 13)) {
+        phoneClean = phoneClean.slice(2);
+      }
+      if (phoneClean.length < 10) {
+        toast.error('Seu WhatsApp não é válido para criar conta Pagar.me. Atualize em /perfil antes.');
+        setSubmitting(false);
+        return;
+      }
       const ddd = phoneClean.substring(0, 2);
       const number = phoneClean.substring(2);
+
       const isCompany = (identityData as any).entity_type === 'company';
+
+      // ═══ Birthdate: valida 18+ antes de mandar (Pagar.me rejeita) ═══
+      if (!isCompany && (identityData as any).birthdate) {
+        const [dd, mm, yyyy] = (identityData as any).birthdate.split('/').map((n: string) => parseInt(n));
+        if (dd && mm && yyyy) {
+          const birth = new Date(yyyy, mm - 1, dd);
+          if (isNaN(birth.getTime())) {
+            toast.error('Data de nascimento inválida');
+            setSubmitting(false);
+            return;
+          }
+          const age = (Date.now() - birth.getTime()) / (365.25 * 24 * 3600 * 1000);
+          if (age < 18) {
+            toast.error('É preciso ter 18+ anos para criar conta de recebimento');
+            setSubmitting(false);
+            return;
+          }
+          if (age > 120) {
+            toast.error('Data de nascimento inválida');
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+
       const documentClean = (identityData as any).document.replace(/\D/g, '');
+
+      // ═══ Sanitiza dados bancários (só dígitos onde aplicável) ═══
+      const bankClean = {
+        ...bankData,
+        branch_number: String(bankData.branch_number).replace(/\D/g, ''),
+        branch_check_digit: bankData.branch_check_digit
+          ? String(bankData.branch_check_digit).replace(/[^\dXx]/g, '').toUpperCase()
+          : undefined,
+        account_number: String(bankData.account_number).replace(/\D/g, ''),
+        account_check_digit: String(bankData.account_check_digit).replace(/[^\dXx]/g, '').toUpperCase(),
+      };
+
+      // ═══ Endereço: força UF maiúscula + CEP só dígitos ═══
+      const addressClean = {
+        ...addressData,
+        zip_code: addressData.zip_code.replace(/\D/g, ''),
+        state: String(addressData.state || '').toUpperCase().slice(0, 2),
+      };
 
       const body: any = {
         entity_type: (identityData as any).entity_type,
-        name: (identityData as any).name,
+        name: String((identityData as any).name).trim(),
         email: reseller.email,
         document: documentClean,
         phone_ddd: ddd,
         phone_number: number,
         monthly_income_cents: 500000,
-        address: { ...addressData, zip_code: addressData.zip_code.replace(/\D/g, '') },
-        bank: bankData,
+        address: addressClean,
+        bank: bankClean,
       };
 
       if (isCompany) {
@@ -142,13 +214,36 @@ export default function OnboardingPagarme() {
         body.annual_revenue_cents = (identityData as any).annual_revenue_cents;
       } else {
         body.birthdate = (identityData as any).birthdate;
-        body.mother_name = (identityData as any).mother_name;
-        body.professional_occupation = (identityData as any).professional_occupation;
+        body.mother_name = String((identityData as any).mother_name).trim();
+        body.professional_occupation = String((identityData as any).professional_occupation).trim();
       }
 
       const { data, error } = await supabase.functions.invoke('create-pagarme-recipient', { body });
+
+      // Tenta extrair mensagem de erro mais específica do edge function
       if (error) throw new Error(error.message || 'Erro desconhecido');
-      if (!data?.ok) throw new Error(data?.error || data?.details || 'Falha ao criar conta Pagar.me');
+      if (!data?.ok) {
+        // data.details pode ser objeto/array de erros da Pagar.me — tenta serializar
+        const detailMsg = typeof data?.details === 'string'
+          ? data.details
+          : Array.isArray(data?.details)
+          ? data.details.map((e: any) => e.message || JSON.stringify(e)).join('; ')
+          : data?.details
+          ? JSON.stringify(data.details)
+          : null;
+
+        const errMap: Record<string, string> = {
+          recipient_already_linked: 'Esse documento já está associado a outro revendedor cadastrado. Contate o suporte.',
+          recipient_already_exists: 'Você já tem uma conta de recebimento. Vá pra /dashboard.',
+          entry_fee_not_paid: 'Você precisa pagar a entrada antes (R$ 9,90).',
+          missing_required_fields: 'Faltam campos obrigatórios. Volte e revise.',
+          missing_pf_fields: 'Faltam dados de pessoa física (data de nascimento ou nome da mãe).',
+          missing_pj_fields: 'Faltam dados de pessoa jurídica (nome fantasia ou data de fundação).',
+          pagarme_create_failed: detailMsg || 'A Pagar.me rejeitou os dados. Confira CPF/CNPJ, banco e endereço.',
+        };
+        const friendlyMsg = errMap[data?.error] || `${data?.error || 'erro'}: ${detailMsg || 'verifique os dados e tente novamente'}`;
+        throw new Error(friendlyMsg);
+      }
 
       setCreateResult({
         recipient_id: data.recipient_id,
@@ -157,6 +252,8 @@ export default function OnboardingPagarme() {
         slug: data.slug,
         sale_url: data.sale_url,
       });
+      // Limpa rascunho do localStorage só depois do sucesso
+      try { localStorage.removeItem('onboarding-draft'); } catch {}
       await refreshReseller?.();
       setStep(4);
     } catch (e: any) {
