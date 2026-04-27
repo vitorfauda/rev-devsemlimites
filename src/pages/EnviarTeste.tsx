@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { Phone, Clock, Send, Check, Copy, AlertCircle, MessageCircle } from 'lucide-react';
+import { Phone, Clock, Send, Check, Copy, AlertCircle, MessageCircle, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoaderRing } from '@/components/LoaderRing';
 import { maskPhone, copyToClipboard, formatDateTime, normalizePhoneE164, validatePhone } from '@/lib/utils';
 import { Badge, Button, ButtonLink, Card, PageHeader, Section, inputClass } from '@/components/ui';
+import { WhatsAppConnectModal } from '@/components/WhatsAppConnectModal';
+import { useResellerWhatsApp } from '@/hooks/useResellerWhatsApp';
 
 type TestResult = {
   license_key: string;
@@ -25,6 +27,14 @@ export default function EnviarTeste() {
   const [result, setResult] = useState<TestResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  // WhatsApp source: padrão DSL (Pedro) ou meu próprio (instância configurada)
+  const wa = useResellerWhatsApp();
+  const [useOwn, setUseOwn] = useState<boolean>(() => localStorage.getItem('dsl_use_own_wa') === '1');
+  const [showQRModal, setShowQRModal] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('dsl_use_own_wa', useOwn ? '1' : '0');
+  }, [useOwn]);
 
   const loadHistory = async () => {
     if (!reseller) return;
@@ -53,10 +63,12 @@ export default function EnviarTeste() {
       return;
     }
     const clean = normalizePhoneE164(phone);
+    // Se user marcou "meu próprio" mas instância não está conectada, usa Pedro silenciosamente
+    const willUseOwn = useOwn && wa.status === 'connected';
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-reseller-test', {
-        body: { reseller_id: reseller.id, phone: clean, minutes: Math.min(10, minutes) },
+        body: { reseller_id: reseller.id, phone: clean, minutes: Math.min(10, minutes), use_own_whatsapp: willUseOwn },
       });
       if (error) throw new Error(error.message);
       if (!data?.ok) throw new Error(data?.error || 'Falha ao gerar teste');
@@ -216,6 +228,56 @@ export default function EnviarTeste() {
                 </div>
               </div>
 
+              {/* Origem do envio: padrão Pedro vs WhatsApp do revendedor */}
+              <div>
+                <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">Enviar via</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUseOwn(false)}
+                    className={
+                      'p-3 rounded-md border text-left transition-all ' +
+                      (!useOwn
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface-2)]/40 hover:border-[var(--color-text-dim)]')
+                    }
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageCircle size={14} className={!useOwn ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'} />
+                      <span className="text-xs font-medium">Padrão DSL</span>
+                    </div>
+                    <div className="text-[10px] text-[var(--color-text-muted)] leading-snug">Sem configuração extra</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (wa.status === 'connected') setUseOwn(true);
+                      else setShowQRModal(true);
+                    }}
+                    className={
+                      'p-3 rounded-md border text-left transition-all ' +
+                      (useOwn && wa.status === 'connected'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface-2)]/40 hover:border-[var(--color-text-dim)]')
+                    }
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Smartphone size={14} className={useOwn && wa.status === 'connected' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'} />
+                      <span className="text-xs font-medium">Meu WhatsApp</span>
+                    </div>
+                    <div className="text-[10px] text-[var(--color-text-muted)] leading-snug">
+                      {wa.status === 'connected' ? `Conectado${wa.phone ? ` · ${wa.phone}` : ''}` : 'Configurar via QR'}
+                    </div>
+                  </button>
+                </div>
+                {useOwn && wa.status !== 'connected' && (
+                  <div className="mt-2 text-[11px] text-amber-400">
+                    Você ainda não conectou seu WhatsApp.{' '}
+                    <button onClick={() => setShowQRModal(true)} className="underline hover:text-amber-300">Conectar agora</button>.
+                  </div>
+                )}
+              </div>
+
               <div className="p-3 rounded-md bg-amber-500/5 border border-amber-500/20 flex gap-2 text-xs">
                 <AlertCircle size={13} className="text-amber-400 shrink-0 mt-0.5" />
                 <div className="text-amber-300">
@@ -305,6 +367,15 @@ export default function EnviarTeste() {
           </Card>
         </div>
       )}
+
+      <WhatsAppConnectModal
+        open={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        onConnected={() => {
+          setUseOwn(true);
+          wa.refresh();
+        }}
+      />
     </Section>
   );
 }

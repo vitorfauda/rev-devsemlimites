@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import {
-  Banknote, Shield, Bell, ChevronRight, AlertTriangle, Lock,
+  Banknote, Shield, Bell, ChevronRight, AlertTriangle, Lock, Smartphone,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LoaderRing } from '@/components/LoaderRing';
@@ -12,8 +12,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Badge, Button, Card, PageHeader, Section, inputClass } from '@/components/ui';
+import { useResellerWhatsApp } from '@/hooks/useResellerWhatsApp';
+import { WhatsAppConnectModal } from '@/components/WhatsAppConnectModal';
 
-type TabKey = 'recebimento' | 'seguranca' | 'notificacoes';
+type TabKey = 'recebimento' | 'whatsapp' | 'seguranca' | 'notificacoes';
 
 export default function Configuracoes() {
   const [tab, setTab] = useState<TabKey>('recebimento');
@@ -26,6 +28,7 @@ export default function Configuracoes() {
         <nav className="flex flex-col gap-1">
           {[
             { key: 'recebimento' as const, label: 'Recebimento', icon: Banknote },
+            { key: 'whatsapp' as const, label: 'WhatsApp', icon: Smartphone },
             { key: 'seguranca' as const, label: 'Segurança', icon: Shield },
             { key: 'notificacoes' as const, label: 'Notificações', icon: Bell },
           ].map((t) => {
@@ -50,6 +53,7 @@ export default function Configuracoes() {
         </nav>
         <div>
           {tab === 'recebimento' && <RecebimentoTab />}
+          {tab === 'whatsapp' && <WhatsAppTab />}
           {tab === 'seguranca' && <SegurancaTab />}
           {tab === 'notificacoes' && <NotificacoesTab />}
         </div>
@@ -374,5 +378,96 @@ function Field({ label, children, error }: { label: React.ReactNode; children: R
       {children}
       {error && <div className="text-xs text-red-400 mt-1">{error}</div>}
     </label>
+  );
+}
+
+function WhatsAppTab() {
+  const wa = useResellerWhatsApp();
+  const [showQR, setShowQR] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  const onDisconnect = async () => {
+    if (!confirm('Desconectar seu WhatsApp? Os próximos testes voltarão a usar o número padrão DSL.')) return;
+    setDisconnecting(true);
+    try {
+      await wa.disconnect();
+      toast.success('WhatsApp desconectado');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="size-9 rounded-md bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 grid place-items-center shrink-0">
+            <Smartphone size={15} className="text-[var(--color-primary)]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-medium mb-0.5">Meu WhatsApp para envio de testes</h3>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+              Conecte seu próprio número e os testes saem do seu WhatsApp ao invés do número padrão DSL.
+              Mais credibilidade, conversão maior.
+            </p>
+          </div>
+        </div>
+
+        {wa.loading ? (
+          <div className="py-6 grid place-items-center"><LoaderRing size={18} /></div>
+        ) : wa.status === 'connected' ? (
+          <div>
+            <div className="flex items-center gap-3 p-3 rounded-md bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 mb-4">
+              <div className="size-2 rounded-full bg-[var(--color-primary)] animate-pulse" />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-[var(--color-primary)]">Conectado</div>
+                {wa.phone && <div className="text-xs text-[var(--color-text-muted)] font-mono">+{wa.phone}</div>}
+              </div>
+            </div>
+            <Button variant="secondary" onClick={onDisconnect} disabled={disconnecting}>
+              {disconnecting ? <LoaderRing size={14} /> : 'Desconectar'}
+            </Button>
+          </div>
+        ) : wa.status === 'disconnected' || wa.status === 'pending' ? (
+          <div>
+            <div className="flex items-center gap-3 p-3 rounded-md bg-amber-500/10 border border-amber-500/20 mb-4">
+              <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+              <div className="text-xs text-amber-300">
+                {wa.status === 'pending'
+                  ? 'Aguardando você escanear o QR code.'
+                  : 'WhatsApp desconectado. Pode ter sido por logout no celular ou tempo sem uso.'}
+              </div>
+            </div>
+            <Button onClick={() => setShowQR(true)}>Reconectar agora</Button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-xs text-[var(--color-text-muted)] leading-relaxed mb-4">
+              Você ainda não conectou. Clique abaixo, escaneie o QR no WhatsApp do seu celular e pronto.
+            </p>
+            <Button onClick={() => setShowQR(true)}><Smartphone size={14} /> Conectar meu WhatsApp</Button>
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 text-xs text-[var(--color-text-muted)]">
+        <div className="text-sm font-medium text-[var(--color-text)] mb-2">Como funciona</div>
+        <ul className="space-y-1.5 leading-relaxed">
+          <li>• Sua sessão WhatsApp Web fica ativa enquanto seu celular tiver internet</li>
+          <li>• Se desconectar, fallback automático pro número padrão DSL</li>
+          <li>• Nunca usamos pra spam — só envio do template de teste do prospect</li>
+          <li>• Você pode desconectar a qualquer momento</li>
+          <li>• Limite de 20 testes/dia continua valendo</li>
+        </ul>
+      </Card>
+
+      <WhatsAppConnectModal
+        open={showQR}
+        onClose={() => setShowQR(false)}
+        onConnected={() => wa.refresh()}
+      />
+    </div>
   );
 }
