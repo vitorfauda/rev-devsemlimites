@@ -1,4 +1,4 @@
-// Loja: compra de chaves (modelo stand-by enquanto Pagar.me não tá habilitado)
+// Loja: compra de chaves (modelo alternativo ao Pagar.me — coexiste com comissão)
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';

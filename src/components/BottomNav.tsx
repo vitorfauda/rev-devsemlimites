@@ -18,10 +18,10 @@ const primary = [
 
 const baseMoreLinks: MoreItem[] = [
   { to: '/enviar-teste', label: 'Enviar teste', icon: Send },
-  { to: '/escala', label: 'Plano de escala', icon: TrendingUp, disabled: true },
-  { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon, disabled: true },
-  { to: '/minhas-chaves', label: 'Meus clientes', icon: Users, disabled: true },
-  { to: '/extrato', label: 'Extrato Pagar.me', icon: Wallet, disabled: true },
+  { to: '/escala', label: 'Plano de escala', icon: TrendingUp },
+  { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon },
+  { to: '/minhas-chaves', label: 'Meus clientes', icon: Users },
+  { to: '/extrato', label: 'Extrato Pagar.me', icon: Wallet },
   { to: '/materiais', label: 'Materiais', icon: Image },
   { to: '/suporte', label: 'Suporte', icon: HelpCircle },
   { to: '/configuracoes', label: 'Configurações', icon: Settings },

@@ -25,12 +25,12 @@ const baseGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Comissão (em breve)',
+    label: 'Comissão',
     items: [
-      { to: '/escala', label: 'Plano de escala', icon: TrendingUp, disabled: true },
-      { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon, disabled: true },
-      { to: '/minhas-chaves', label: 'Meus clientes', icon: Users, disabled: true },
-      { to: '/extrato', label: 'Extrato Pagar.me', icon: Wallet, disabled: true },
+      { to: '/escala', label: 'Plano de escala', icon: TrendingUp },
+      { to: '/comprar-chaves', label: 'Meus links', icon: LinkIcon },
+      { to: '/minhas-chaves', label: 'Meus clientes', icon: Users },
+      { to: '/extrato', label: 'Extrato Pagar.me', icon: Wallet },
     ],
   },
   {
