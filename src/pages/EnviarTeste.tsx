@@ -22,7 +22,7 @@ type TestResult = {
 export default function EnviarTeste() {
   const { reseller } = useAuth();
   const [phone, setPhone] = useState('');
-  const [minutes, setMinutes] = useState(10);
+  const [minutes, setMinutes] = useState(25);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -68,7 +68,7 @@ export default function EnviarTeste() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-reseller-test', {
-        body: { reseller_id: reseller.id, phone: clean, minutes: Math.min(10, minutes), use_own_whatsapp: willUseOwn },
+        body: { reseller_id: reseller.id, phone: clean, minutes: Math.min(25, minutes), use_own_whatsapp: willUseOwn },
       });
       if (error) throw new Error(error.message);
       if (!data?.ok) throw new Error(data?.error || 'Falha ao gerar teste');
@@ -94,14 +94,14 @@ export default function EnviarTeste() {
   const resetForm = () => {
     setResult(null);
     setPhone('');
-    setMinutes(10);
+    setMinutes(25);
   };
 
   return (
     <Section>
       <PageHeader
         title="Enviar teste"
-        description="Gere licenças de teste de até 10 minutos pra prospects"
+        description="Gere licenças de teste de até 25 minutos pra prospects"
       />
 
       {result ? (
@@ -193,7 +193,7 @@ export default function EnviarTeste() {
 
               <div>
                 <label className="block text-xs text-[var(--color-text-muted)] mb-1.5">
-                  Duração (minutos, máx 10)
+                  Duração (minutos, máx 25)
                 </label>
                 <div className="relative">
                   <Clock
@@ -203,14 +203,14 @@ export default function EnviarTeste() {
                   <input
                     type="number"
                     min={1}
-                    max={10}
+                    max={25}
                     value={minutes}
-                    onChange={(e) => setMinutes(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => setMinutes(Math.min(25, Math.max(1, parseInt(e.target.value) || 1)))}
                     className={inputClass + ' pl-10 font-mono'}
                   />
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {[3, 5, 10].map((m) => (
+                  {[5, 10, 15, 25].map((m) => (
                     <button
                       key={m}
                       type="button"
