@@ -53,7 +53,10 @@ const baseGroups: NavGroup[] = [
 
 const adminGroup: NavGroup = {
   label: 'Admin',
-  items: [{ to: '/admin/cursos', label: 'Gerenciar cursos', icon: Wrench }],
+  items: [
+    { to: '/admin/dashboard', label: 'Dashboard admin', icon: TrendingUp },
+    { to: '/admin/cursos', label: 'Gerenciar cursos', icon: Wrench },
+  ],
 };
 
 export function Sidebar() {

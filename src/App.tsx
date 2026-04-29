@@ -25,6 +25,7 @@ import Privacidade from '@/pages/Privacidade';
 import Cursos from '@/pages/Cursos';
 import CursoView from '@/pages/CursoView';
 import AdminCursos from '@/pages/AdminCursos';
+import AdminDashboard from '@/pages/AdminDashboard';
 import Loja from '@/pages/Loja';
 import Estoque from '@/pages/Estoque';
 
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="/cursos" element={<ProtectedRoute><Cursos /></ProtectedRoute>} />
               <Route path="/cursos/:slug" element={<ProtectedRoute><CursoView /></ProtectedRoute>} />
               <Route path="/admin/cursos" element={<ProtectedRoute><AdminCursos /></ProtectedRoute>} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/loja" element={<ProtectedRoute><Loja /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
             </Route>

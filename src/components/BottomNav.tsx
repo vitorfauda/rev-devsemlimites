@@ -30,6 +30,7 @@ const baseMoreLinks: MoreItem[] = [
 ];
 
 const adminMoreLinks: MoreItem[] = [
+  { to: '/admin/dashboard', label: 'Dashboard admin', icon: TrendingUp },
   { to: '/admin/cursos', label: 'Gerenciar cursos', icon: Wrench },
 ];
 
