@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import {
   TrendingUp, Users, Target, ArrowRight, Wallet, ShieldCheck,
-  Copy, Check, Zap, ExternalLink,
+  Copy, Check, Zap, ExternalLink, DollarSign, Key, ShoppingCart, Award,
 } from 'lucide-react';
 import { formatBRL, copyToClipboard } from '@/lib/utils';
 import { LoaderRing } from '@/components/LoaderRing';
@@ -28,15 +28,28 @@ interface Balance {
   kyc_pending?: boolean;
 }
 
+interface AdminMetrics {
+  total_revenue_cents: number;
+  total_keys_sold: number;
+  total_purchases: number;
+  total_resellers_active: number;
+  total_resellers_buyers: number;
+  current_month_revenue_cents: number;
+  current_month_purchases: number;
+  current_month_keys: number;
+  top_resellers: Array<{ resellerId: string; name: string; totalCents: number; keys: number; purchases: number }>;
+}
+
 const TIER_LABEL: Record<string, string> = {
   bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', diamante: 'Diamante', lendario: 'Lendário',
 };
 
 export default function Dashboard() {
-  const { reseller, loading: authLoading, refreshReseller } = useAuth();
+  const { reseller, isAdmin, loading: authLoading, refreshReseller } = useAuth();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
+  const [adminMetrics, setAdminMetrics] = useState<AdminMetrics | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -48,13 +61,19 @@ export default function Dashboard() {
     let cancelled = false;
     (async () => {
       try {
-        const [m, b] = await Promise.all([
+        const calls: Promise<any>[] = [
           supabase.functions.invoke('get-reseller-metrics'),
           supabase.functions.invoke('get-reseller-balance'),
-        ]);
+        ];
+        // Admin: também busca métricas globais
+        if (isAdmin) {
+          calls.push(supabase.functions.invoke('get-admin-metrics'));
+        }
+        const results = await Promise.all(calls);
         if (cancelled) return;
-        if (m.data?.ok) setMetrics(m.data);
-        if (b.data?.ok) setBalance(b.data);
+        if (results[0]?.data?.ok) setMetrics(results[0].data);
+        if (results[1]?.data?.ok) setBalance(results[1].data);
+        if (isAdmin && results[2]?.data?.ok) setAdminMetrics(results[2].data);
       } catch {}
       finally {
         if (!cancelled) setLoading(false);
@@ -63,7 +82,7 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [reseller, authLoading]);
+  }, [reseller, authLoading, isAdmin]);
 
   if (loading || authLoading)
     return (
@@ -113,6 +132,79 @@ export default function Dashboard() {
           metrics && <Badge tone="success">{TIER_LABEL[metrics.tier.name]}</Badge>
         }
       />
+
+      {/* ADMIN: receita das compras de chaves */}
+      {isAdmin && adminMetrics && (
+        <Card className="p-5 mb-6 border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5">
+          <div className="flex items-center gap-2 mb-4 text-xs text-[var(--color-text-muted)] uppercase tracking-wider">
+            <Award size={12} className="text-[var(--color-primary)]" />
+            <span>Admin · Receita da plataforma</span>
+            <Link to="/admin/dashboard" className="ml-auto text-[var(--color-primary)] hover:underline normal-case tracking-normal">
+              Ver detalhado <ArrowRight size={11} className="inline" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)] mb-1">
+                <DollarSign size={10} /> Receita total
+              </div>
+              <div className="text-xl font-mono text-[var(--color-primary)]">
+                {formatBRL(adminMetrics.total_revenue_cents)}
+              </div>
+              <div className="text-[10px] text-[var(--color-text-dim)] mt-0.5">
+                Mês: {formatBRL(adminMetrics.current_month_revenue_cents)}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)] mb-1">
+                <Key size={10} /> Chaves vendidas
+              </div>
+              <div className="text-xl font-mono">{adminMetrics.total_keys_sold}</div>
+              <div className="text-[10px] text-[var(--color-text-dim)] mt-0.5">
+                Mês: {adminMetrics.current_month_keys}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)] mb-1">
+                <ShoppingCart size={10} /> Compras pagas
+              </div>
+              <div className="text-xl font-mono">{adminMetrics.total_purchases}</div>
+              <div className="text-[10px] text-[var(--color-text-dim)] mt-0.5">
+                Mês: {adminMetrics.current_month_purchases}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-text-muted)] mb-1">
+                <Users size={10} /> Compradores
+              </div>
+              <div className="text-xl font-mono">
+                {adminMetrics.total_resellers_buyers}
+                <span className="text-[var(--color-text-dim)] text-sm">/{adminMetrics.total_resellers_active}</span>
+              </div>
+              <div className="text-[10px] text-[var(--color-text-dim)] mt-0.5">
+                ativos / compraram
+              </div>
+            </div>
+          </div>
+          {adminMetrics.top_resellers.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+              <div className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Top 3 revendedores</div>
+              <div className="space-y-1">
+                {adminMetrics.top_resellers.slice(0, 3).map((r, i) => (
+                  <div key={r.resellerId} className="flex items-center gap-2 text-xs">
+                    <span className="text-[var(--color-text-dim)] font-mono w-5">#{i + 1}</span>
+                    <span className="flex-1 truncate">{r.name}</span>
+                    <span className="text-[var(--color-text-muted)]">{r.keys}× chaves</span>
+                    <span className="font-mono text-[var(--color-primary)] min-w-[70px] text-right">
+                      {formatBRL(r.totalCents)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Onboarding banner — varia conforme estado */}
       {onboardingPending && reseller.entry_paid && (
