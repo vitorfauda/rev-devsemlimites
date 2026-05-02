@@ -11,6 +11,7 @@ import { LoaderRing } from '@/components/LoaderRing';
 import { Badge, Button, Card, PageHeader, Section, inputClass } from '@/components/ui';
 
 type PlanCode = '7dias' | '30dias' | 'vitalicio';
+const VISIBLE_PLAN_CODES: PlanCode[] = ['7dias', '30dias'];
 
 interface Tier {
   id: string;
@@ -260,8 +261,8 @@ export default function Loja() {
             <p className="text-xs text-[var(--color-text-muted)] mb-4">
               Cada chave libera o DSL pelo período do plano escolhido pra um cliente final.
             </p>
-            <div className="grid sm:grid-cols-3 gap-3">
-              {(['7dias', '30dias', 'vitalicio'] as PlanCode[]).map((p) => {
+            <div className="grid sm:grid-cols-2 gap-3">
+              {VISIBLE_PLAN_CODES.map((p) => {
                 const Icon = PLAN_INFO[p].icon;
                 const active = planCode === p;
                 const cheapest = tiers
